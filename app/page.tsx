@@ -1,6 +1,8 @@
 ﻿import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
 import StatusBadge from '@/components/StatusBadge'
+import DeleteButton from '@/components/DeleteButton'
+import { deleteOrder } from '@/app/actions/orders'
 
 function formatDate(dateStr: string) {
   return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
@@ -87,6 +89,7 @@ export default async function DashboardPage() {
                   <th className="px-6 py-3 font-medium">Customer</th>
                   <th className="px-6 py-3 font-medium">Status</th>
                   <th className="px-6 py-3 font-medium">Due Date</th>
+                  <th className="px-6 py-3 font-medium"></th>
                 </tr>
               </thead>
               <tbody>
@@ -104,6 +107,13 @@ export default async function DashboardPage() {
                       {new Date(order.due_date + 'T00:00:00') < today && (
                         <span className="ml-2 text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded">overdue</span>
                       )}
+                    </td>
+                    <td className="px-6 py-3 text-right">
+                      <DeleteButton
+                        action={deleteOrder.bind(null, order.id)}
+                        message={`Delete order ${order.order_number || order.id.slice(0, 8)}? This cannot be undone.`}
+                        label="Delete"
+                      />
                     </td>
                   </tr>
                 ))}
