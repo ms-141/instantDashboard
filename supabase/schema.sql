@@ -67,3 +67,33 @@ create policy "auth users" on customers    for all using (auth.role() = 'authent
 create policy "auth users" on orders       for all using (auth.role() = 'authenticated');
 create policy "auth users" on order_logos  for all using (auth.role() = 'authenticated');
 create policy "auth users" on order_garments for all using (auth.role() = 'authenticated');
+
+-- Imported order queue (for email/webhook intake + manual approval)
+create table imported_orders (
+  id                uuid primary key default gen_random_uuid(),
+  source            text not null default 'email_webhook',
+  source_identifier text,
+  review_status     text not null default 'pending'
+                    check (review_status in ('pending','approved','rejected')),
+  customer_name     text not null,
+  customer_email    text,
+  customer_phone    text,
+  customer_notes    text,
+  order_number      text,
+  order_status      text not null default 'new'
+                    check (order_status in ('new','in_progress','completed','delivered','cancelled')),
+  due_date          date,
+  notes             text,
+  logos             jsonb not null default '[]'::jsonb,
+  garments          jsonb not null default '[]'::jsonb,
+  raw_payload       jsonb not null default '{}'::jsonb,
+  review_notes      text,
+  approved_order_id uuid references orders(id) on delete set null,
+  created_at        timestamptz not null default now(),
+  reviewed_at       timestamptz
+);
+
+create index imported_orders_review_status_created_idx on imported_orders(review_status, created_at desc);
+
+alter table imported_orders enable row level security;
+create policy "auth users" on imported_orders for all using (auth.role() = 'authenticated');

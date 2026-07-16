@@ -1,6 +1,8 @@
 import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
 import StatusBadge from '@/components/StatusBadge'
+import DeleteButton from '@/components/DeleteButton'
+import { deleteOrder } from '@/app/actions/orders'
 import type { OrderStatus } from '@/types'
 
 const ALL_STATUSES: OrderStatus[] = ['new', 'in_progress', 'completed', 'delivered', 'cancelled']
@@ -102,9 +104,17 @@ export default async function OrdersPage({
                     <td className="px-6 py-3"><StatusBadge status={order.status} /></td>
                     <td className="px-6 py-3 text-gray-600">{formatDate(order.due_date)}</td>
                     <td className="px-6 py-3">
-                      <Link href={`/orders/${order.id}/edit`} className="text-xs text-gray-400 hover:text-indigo-600">
-                        Edit
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        <Link href={`/orders/${order.id}/edit`} className="text-xs text-gray-400 hover:text-indigo-600">
+                          Edit
+                        </Link>
+                        <DeleteButton
+                          action={deleteOrder.bind(null, order.id)}
+                          message="Delete this order? This cannot be undone."
+                          label="Delete"
+                          className="text-xs text-red-500 hover:text-red-700"
+                        />
+                      </div>
                     </td>
                   </tr>
                 ))}
