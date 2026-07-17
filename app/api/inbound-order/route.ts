@@ -32,6 +32,13 @@ type InboundOrderPayload = {
   source_identifier?: string
 }
 
+type InboundOrderRequestPayload = InboundOrderPayload & {
+  raw_email_text?: string
+  email_subject?: string
+  email_from?: string
+  received_at?: string
+}
+
 const VALID_STATUSES: OrderStatus[] = ['new', 'in_progress', 'completed', 'delivered', 'cancelled']
 const VALID_SUPPLIED_BY: SuppliedBy[] = ['customer', 'us']
 
@@ -99,6 +106,93 @@ function parseGarments(garments: InboundGarment[] | undefined) {
     }))
 }
 
+function extractJsonObject(text: string): Record<string, unknown> | null {
+  const trimmed = text.trim()
+  if (!trimmed) return null
+
+  try {
+    const parsed = JSON.parse(trimmed) as unknown
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>
+    }
+  } catch {}
+
+  const firstBrace = trimmed.indexOf('{')
+  const lastBrace = trimmed.lastIndexOf('}')
+  if (firstBrace < 0 || lastBrace <= firstBrace) return null
+
+  try {
+    const parsed = JSON.parse(trimmed.slice(firstBrace, lastBrace + 1)) as unknown
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>
+    }
+  } catch {}
+
+  return null
+}
+
+async function extractWithOllama(params: {
+  rawEmailText: string
+  emailSubject: string | null
+  emailFrom: string | null
+}): Promise<InboundOrderPayload | null> {
+  const baseUrl = process.env.OLLAMA_BASE_URL ?? 'http://127.0.0.1:11434'
+  const model = process.env.OLLAMA_MODEL ?? 'gemma4:e2b'
+
+  const prompt = [
+    'Extract embroidery order details from this email.',
+    'Return ONLY valid JSON with these keys when available:',
+    '{',
+    '  "customer_name": string,',
+    '  "customer_email": string,',
+    '  "customer_phone": string,',
+    '  "customer_notes": string,',
+    '  "order_number": string,',
+    '  "status": "new" | "in_progress" | "completed" | "delivered" | "cancelled",',
+    '  "due_date": "YYYY-MM-DD",',
+    '  "notes": string,',
+    '  "logos": [{"name": string, "width_inches": number, "height_inches": number, "placement": string, "notes": string}],',
+    '  "garments": [{"garment_type": string, "quantity": number, "color": string, "sizes": string, "supplied_by": "customer" | "us", "notes": string}]',
+    '}',
+    'If unknown, omit fields. Do not include markdown fences.',
+    '',
+    `From: ${params.emailFrom ?? ''}`,
+    `Subject: ${params.emailSubject ?? ''}`,
+    'Body:',
+    params.rawEmailText,
+  ].join('\n')
+
+  const response = await fetch(`${baseUrl}/api/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model,
+      prompt,
+      stream: false,
+      format: 'json',
+      options: {
+        temperature: 0,
+      },
+    }),
+  })
+
+  if (!response.ok) {
+    return null
+  }
+
+  const generated = (await response.json()) as { response?: string }
+  if (!generated.response) {
+    return null
+  }
+
+  const extracted = extractJsonObject(generated.response)
+  if (!extracted) {
+    return null
+  }
+
+  return extracted as InboundOrderPayload
+}
+
 export async function POST(request: Request) {
   const expectedSecret = process.env.INBOUND_ORDER_WEBHOOK_SECRET
   if (!expectedSecret) {
@@ -110,37 +204,56 @@ export async function POST(request: Request) {
     return jsonError('Unauthorized', 401)
   }
 
-  const payload = (await request.json()) as InboundOrderPayload
-  const customerName = asText(payload.customer_name)
+  const payload = (await request.json()) as InboundOrderRequestPayload
+  const rawEmailText = asText(payload.raw_email_text)
+  const extractedPayload =
+    rawEmailText && !asText(payload.customer_name)
+      ? await extractWithOllama({
+          rawEmailText,
+          emailSubject: asText(payload.email_subject),
+          emailFrom: asText(payload.email_from),
+        })
+      : null
+
+  const normalizedPayload: InboundOrderPayload = {
+    ...payload,
+    ...extractedPayload,
+    logos: payload.logos ?? extractedPayload?.logos,
+    garments: payload.garments ?? extractedPayload?.garments,
+  }
+
+  const customerName = asText(normalizedPayload.customer_name)
   if (!customerName) {
-    return jsonError('customer_name is required')
+    return jsonError('customer_name is required (or provide raw_email_text for Ollama extraction)')
   }
 
   const orderStatus =
-    payload.status && VALID_STATUSES.includes(payload.status) ? payload.status : 'new'
-  const dueDate = asDate(asText(payload.due_date))
-  if (payload.due_date && !dueDate) {
+    normalizedPayload.status && VALID_STATUSES.includes(normalizedPayload.status)
+      ? normalizedPayload.status
+      : 'new'
+  const dueDate = asDate(asText(normalizedPayload.due_date))
+  if (normalizedPayload.due_date && !dueDate) {
     return jsonError('due_date must be YYYY-MM-DD when provided')
   }
 
   const admin = createAdminClient()
-  const logos = parseLogos(payload.logos)
-  const garments = parseGarments(payload.garments)
+  const logos = parseLogos(normalizedPayload.logos)
+  const garments = parseGarments(normalizedPayload.garments)
 
   const { data: importedOrder, error } = await admin
     .from('imported_orders')
     .insert({
-      source: 'email_webhook',
-      source_identifier: asText(payload.source_identifier),
+      source: extractedPayload ? 'email_ollama_webhook' : 'email_webhook',
+      source_identifier: asText(normalizedPayload.source_identifier),
       review_status: 'pending',
       customer_name: customerName,
-      customer_email: asText(payload.customer_email),
-      customer_phone: asText(payload.customer_phone),
-      customer_notes: asText(payload.customer_notes),
-      order_number: asText(payload.order_number),
+      customer_email: asText(normalizedPayload.customer_email),
+      customer_phone: asText(normalizedPayload.customer_phone),
+      customer_notes: asText(normalizedPayload.customer_notes),
+      order_number: asText(normalizedPayload.order_number),
       order_status: orderStatus,
       due_date: dueDate,
-      notes: asText(payload.notes),
+      notes: asText(normalizedPayload.notes),
       logos,
       garments,
       raw_payload: payload,
