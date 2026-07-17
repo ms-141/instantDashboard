@@ -65,7 +65,7 @@ export default function OrderForm({ customers, action, order }: Props) {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Order Number</label>
             <input type="text" name="order_number" defaultValue={order?.order_number ?? ''}
-              placeholder="e.g. ORD-001"
+              placeholder="Leave blank to auto-generate"
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
           </div>
           <div>
