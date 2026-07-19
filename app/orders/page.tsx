@@ -2,7 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
 import StatusBadge from '@/components/StatusBadge'
 import DeleteButton from '@/components/DeleteButton'
-import { deleteOrder } from '@/app/actions/orders'
+import { deleteOrder, markOrderCompleted } from '@/app/actions/orders'
 import type { OrderStatus } from '@/types'
 
 const ALL_STATUSES: OrderStatus[] = ['new', 'in_progress', 'completed', 'delivered', 'cancelled']
@@ -15,6 +15,26 @@ function formatDate(d: string) {
   return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+  }).format(value)
+}
+
+function getOrderTotal(order: {
+  logos?: Array<{ price: number | null }>
+  garments?: Array<{ price: number | null; quantity: number }>
+}) {
+  const logoTotal = (order.logos ?? []).reduce((sum, logo) => sum + (logo.price ?? 0), 0)
+  const garmentTotal = (order.garments ?? []).reduce(
+    (sum, garment) => sum + (garment.price ?? 0) * garment.quantity,
+    0
+  )
+  return logoTotal + garmentTotal
+}
+
 export default async function OrdersPage({
   searchParams,
 }: {
@@ -25,7 +45,7 @@ export default async function OrdersPage({
 
   let query = supabase
     .from('orders')
-    .select('*, customer:customers(name)')
+    .select('*, customer:customers(name), logos:order_logos(price), garments:order_garments(price, quantity)')
     .order('due_date', { ascending: true })
 
   if (params.status && ALL_STATUSES.includes(params.status as OrderStatus)) {
@@ -89,6 +109,7 @@ export default async function OrdersPage({
                   <th className="px-6 py-3 font-medium">Customer</th>
                   <th className="px-6 py-3 font-medium">Status</th>
                   <th className="px-6 py-3 font-medium">Due Date</th>
+                  <th className="px-6 py-3 font-medium">Total</th>
                   <th className="px-6 py-3"></th>
                 </tr>
               </thead>
@@ -103,8 +124,21 @@ export default async function OrdersPage({
                     <td className="px-6 py-3 text-gray-700">{order.customer?.name}</td>
                     <td className="px-6 py-3"><StatusBadge status={order.status} /></td>
                     <td className="px-6 py-3 text-gray-600">{formatDate(order.due_date)}</td>
+                    <td className="px-6 py-3 font-medium text-emerald-700">{formatCurrency(getOrderTotal(order))}</td>
                     <td className="px-6 py-3">
                       <div className="flex items-center gap-2">
+                        {order.status !== 'completed' && order.status !== 'delivered' && (
+                          <form action={markOrderCompleted.bind(null, order.id)}>
+                            <button
+                              type="submit"
+                              title="Mark completed"
+                              aria-label="Mark order completed"
+                              className="text-xs text-green-600 hover:text-green-700"
+                            >
+                              ✓ Complete
+                            </button>
+                          </form>
+                        )}
                         <Link href={`/orders/${order.id}/edit`} className="text-xs text-gray-400 hover:text-indigo-600">
                           Edit
                         </Link>

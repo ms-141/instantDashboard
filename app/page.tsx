@@ -19,11 +19,31 @@ function dueDateClass(dueDate: string): string {
   return 'text-gray-700'
 }
 
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+  }).format(value)
+}
+
+function getOrderTotal(order: {
+  logos?: Array<{ price: number | null }>
+  garments?: Array<{ price: number | null; quantity: number }>
+}) {
+  const logoTotal = (order.logos ?? []).reduce((sum, logo) => sum + (logo.price ?? 0), 0)
+  const garmentTotal = (order.garments ?? []).reduce(
+    (sum, garment) => sum + (garment.price ?? 0) * garment.quantity,
+    0
+  )
+  return logoTotal + garmentTotal
+}
+
 export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: allOrders } = await supabase
     .from('orders')
-    .select('*, customer:customers(name)')
+    .select('*, customer:customers(name), logos:order_logos(price), garments:order_garments(price, quantity)')
     .order('due_date', { ascending: true })
 
   const orders = allOrders ?? []
@@ -41,11 +61,16 @@ export default async function DashboardPage() {
     return u.getMonth() === today.getMonth() && u.getFullYear() === today.getFullYear()
   })
 
+  const activeValue = active.reduce((sum, order) => sum + getOrderTotal(order), 0)
+  const completedThisMonthValue = completedThisMonth.reduce((sum, order) => sum + getOrderTotal(order), 0)
+
   const stats = [
     { label: 'Active Orders',        value: active.length,              cls: 'bg-indigo-50 text-indigo-700 border-indigo-100' },
     { label: 'Overdue',              value: overdue.length,             cls: overdue.length > 0 ? 'bg-red-50 text-red-700 border-red-100' : 'bg-gray-50 text-gray-600 border-gray-100' },
     { label: 'Due This Week',        value: dueThisWeek.length,         cls: dueThisWeek.length > 0 ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-gray-50 text-gray-600 border-gray-100' },
     { label: 'Completed This Month', value: completedThisMonth.length,  cls: 'bg-green-50 text-green-700 border-green-100' },
+    { label: 'Active Value',         value: formatCurrency(activeValue), cls: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
+    { label: 'Completed Value (Month)', value: formatCurrency(completedThisMonthValue), cls: 'bg-teal-50 text-teal-700 border-teal-100' },
   ]
 
   return (
@@ -60,7 +85,7 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mb-8 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 mb-8 sm:grid-cols-3">
         {stats.map(s => (
           <div key={s.label} className={`rounded-xl border p-5 ${s.cls}`}>
             <p className="text-3xl font-bold">{s.value}</p>
@@ -71,7 +96,7 @@ export default async function DashboardPage() {
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100">
         <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-          <h2 className="font-semibold text-gray-800">Active Orders � soonest due first</h2>
+          <h2 className="font-semibold text-gray-800">Active Orders - soonest due first</h2>
           <Link href="/orders" className="text-sm text-indigo-600 hover:underline">View all</Link>
         </div>
 
@@ -89,6 +114,7 @@ export default async function DashboardPage() {
                   <th className="px-6 py-3 font-medium">Customer</th>
                   <th className="px-6 py-3 font-medium">Status</th>
                   <th className="px-6 py-3 font-medium">Due Date</th>
+                  <th className="px-6 py-3 font-medium">Total</th>
                   <th className="px-6 py-3 font-medium"></th>
                 </tr>
               </thead>
@@ -108,6 +134,7 @@ export default async function DashboardPage() {
                         <span className="ml-2 text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded">overdue</span>
                       )}
                     </td>
+                    <td className="px-6 py-3 font-medium text-emerald-700">{formatCurrency(getOrderTotal(order))}</td>
                     <td className="px-6 py-3 text-right">
                       <DeleteButton
                         action={deleteOrder.bind(null, order.id)}

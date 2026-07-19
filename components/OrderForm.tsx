@@ -16,10 +16,10 @@ type LogoField = Omit<OrderLogo, 'id' | 'order_id'>
 type GarmentField = Omit<OrderGarment, 'id' | 'order_id'>
 
 const emptyLogo = (): LogoField => ({
-  name: null, width_inches: 0, height_inches: 0, placement: 'Left Chest', notes: null,
+  name: null, price: null, width_inches: 0, height_inches: 0, placement: 'Left Chest', notes: null,
 })
 const emptyGarment = (): GarmentField => ({
-  garment_type: 'Polo', quantity: 1, color: null, sizes: null, supplied_by: 'customer', notes: null,
+  garment_type: 'Polo', quantity: 1, price: null, color: null, sizes: null, supplied_by: 'customer', notes: null,
 })
 
 interface Props {
@@ -30,12 +30,12 @@ interface Props {
 
 export default function OrderForm({ customers, action, order }: Props) {
   const [logos, setLogos] = useState<LogoField[]>(
-    order?.logos?.map(({ name, width_inches, height_inches, placement, notes }) =>
-      ({ name, width_inches, height_inches, placement, notes })) ?? [emptyLogo()]
+    order?.logos?.map(({ name, price, width_inches, height_inches, placement, notes }) =>
+      ({ name, price, width_inches, height_inches, placement, notes })) ?? [emptyLogo()]
   )
   const [garments, setGarments] = useState<GarmentField[]>(
-    order?.garments?.map(({ garment_type, quantity, color, sizes, supplied_by, notes }) =>
-      ({ garment_type, quantity, color, sizes, supplied_by, notes })) ?? [emptyGarment()]
+    order?.garments?.map(({ garment_type, quantity, price, color, sizes, supplied_by, notes }) =>
+      ({ garment_type, quantity, price, color, sizes, supplied_by, notes })) ?? [emptyGarment()]
   )
 
   const updateLogo = (i: number, field: keyof LogoField, value: unknown) =>
@@ -118,6 +118,14 @@ export default function OrderForm({ customers, action, order }: Props) {
                   className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
               </div>
               <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Price</label>
+                <input type="number" step="0.01" min="0"
+                  value={logo.price ?? ''}
+                  onChange={e => updateLogo(i, 'price', e.target.value ? parseFloat(e.target.value) : null)}
+                  placeholder="e.g. 25.00"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+              <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Placement *</label>
                 <select value={logo.placement} onChange={e => updateLogo(i, 'placement', e.target.value)}
                   className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
@@ -187,6 +195,14 @@ export default function OrderForm({ customers, action, order }: Props) {
                 <label className="block text-xs font-medium text-gray-600 mb-1">Quantity *</label>
                 <input type="number" min="1" value={g.quantity}
                   onChange={e => updateGarment(i, 'quantity', parseInt(e.target.value) || 1)}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Price</label>
+                <input type="number" step="0.01" min="0"
+                  value={g.price ?? ''}
+                  onChange={e => updateGarment(i, 'price', e.target.value ? parseFloat(e.target.value) : null)}
+                  placeholder="e.g. 12.50"
                   className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
               </div>
               <div>

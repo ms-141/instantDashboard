@@ -84,3 +84,18 @@ export async function deleteOrder(orderId: string) {
   revalidatePath('/orders')
   redirect('/orders')
 }
+
+export async function markOrderCompleted(orderId: string) {
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('orders')
+    .update({ status: 'completed' })
+    .eq('id', orderId)
+
+  if (error) throw new Error(error.message)
+
+  revalidatePath('/')
+  revalidatePath('/orders')
+  revalidatePath(`/orders/${orderId}`)
+}

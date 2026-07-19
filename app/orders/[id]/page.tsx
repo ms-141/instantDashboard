@@ -12,6 +12,14 @@ function formatDate(d: string) {
   })
 }
 
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+  }).format(value)
+}
+
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await createClient()
@@ -25,6 +33,12 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   if (!order) notFound()
 
   const deleteThisOrder = deleteOrder.bind(null, id)
+  const logoTotal = (order.logos ?? []).reduce((sum: number, logo: OrderLogo) => sum + (logo.price ?? 0), 0)
+  const garmentTotal = (order.garments ?? []).reduce(
+    (sum: number, garment: OrderGarment) => sum + (garment.price ?? 0) * garment.quantity,
+    0
+  )
+  const orderTotal = logoTotal + garmentTotal
 
   return (
     <div className="max-w-3xl">
@@ -54,7 +68,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-xl border border-gray-100 p-4">
           <p className="text-xs text-gray-400 mb-1">Customer</p>
           <Link href={`/customers/${order.customer.id}`} className="font-medium text-indigo-700 hover:underline">
@@ -70,6 +84,10 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           <p className="text-xs text-gray-400 mb-1">Due Date</p>
           <p className="font-medium text-gray-800">{formatDate(order.due_date)}</p>
         </div>
+        <div className="bg-white rounded-xl border border-gray-100 p-4">
+          <p className="text-xs text-gray-400 mb-1">Order Total</p>
+          <p className="font-semibold text-emerald-700">{formatCurrency(orderTotal)}</p>
+        </div>
       </div>
 
       {order.notes && (
@@ -81,7 +99,9 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       {/* Logos */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-6">
         <div className="px-6 py-4 border-b border-gray-100">
-          <h2 className="font-semibold text-gray-800">Logos ({order.logos?.length ?? 0})</h2>
+          <h2 className="font-semibold text-gray-800">
+            Logos ({order.logos?.length ?? 0}) · {formatCurrency(logoTotal)}
+          </h2>
         </div>
         {!order.logos?.length ? (
           <p className="text-gray-400 text-sm px-6 py-5">No logos on this order.</p>
@@ -92,6 +112,9 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                 <div className="flex-1">
                   <p className="font-medium text-gray-800">{logo.name || 'Untitled Logo'}</p>
                   <p className="text-sm text-gray-500">{logo.placement}</p>
+                  {logo.price !== null && logo.price !== undefined && (
+                    <p className="text-sm text-emerald-700 mt-1">{formatCurrency(logo.price)}</p>
+                  )}
                   {logo.notes && <p className="text-sm text-gray-400 mt-1">{logo.notes}</p>}
                 </div>
                 <span className="shrink-0 bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-lg text-sm font-medium">
@@ -106,7 +129,9 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       {/* Garments */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100">
         <div className="px-6 py-4 border-b border-gray-100">
-          <h2 className="font-semibold text-gray-800">Garments ({order.garments?.length ?? 0})</h2>
+          <h2 className="font-semibold text-gray-800">
+            Garments ({order.garments?.length ?? 0}) · {formatCurrency(garmentTotal)}
+          </h2>
         </div>
         {!order.garments?.length ? (
           <p className="text-gray-400 text-sm px-6 py-5">No garments on this order.</p>
@@ -117,6 +142,8 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                 <tr className="text-left text-gray-400 text-xs border-b border-gray-50">
                   <th className="px-6 py-3 font-medium">Type</th>
                   <th className="px-6 py-3 font-medium">Qty</th>
+                  <th className="px-6 py-3 font-medium">Price</th>
+                  <th className="px-6 py-3 font-medium">Line Total</th>
                   <th className="px-6 py-3 font-medium">Color</th>
                   <th className="px-6 py-3 font-medium">Sizes</th>
                   <th className="px-6 py-3 font-medium">Supplied By</th>
@@ -128,6 +155,8 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                   <tr key={g.id} className="border-t border-gray-50">
                     <td className="px-6 py-3 font-medium text-gray-700">{g.garment_type}</td>
                     <td className="px-6 py-3 text-gray-600">{g.quantity}</td>
+                    <td className="px-6 py-3 text-gray-600">{g.price !== null ? formatCurrency(g.price) : '—'}</td>
+                    <td className="px-6 py-3 text-emerald-700 font-medium">{formatCurrency((g.price ?? 0) * g.quantity)}</td>
                     <td className="px-6 py-3 text-gray-600">{g.color || '—'}</td>
                     <td className="px-6 py-3 text-gray-600">{g.sizes || '—'}</td>
                     <td className="px-6 py-3">

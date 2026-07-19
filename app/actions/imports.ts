@@ -7,6 +7,7 @@ import type { OrderStatus, SuppliedBy } from '@/types'
 
 type ImportLogo = {
   name: string | null
+  price: number | null
   width_inches: number
   height_inches: number
   placement: string
@@ -16,6 +17,7 @@ type ImportLogo = {
 type ImportGarment = {
   garment_type: string
   quantity: number
+  price: number | null
   color: string | null
   sizes: string | null
   supplied_by: SuppliedBy
@@ -60,6 +62,7 @@ function parseLogos(value: string | null): ImportLogo[] {
     })
     .map(item => ({
       name: typeof item.name === 'string' && item.name.trim().length > 0 ? item.name.trim() : null,
+      price: typeof item.price === 'number' && item.price >= 0 ? item.price : null,
       width_inches: item.width_inches as number,
       height_inches: item.height_inches as number,
       placement: (item.placement as string).trim(),
@@ -87,6 +90,7 @@ function parseGarments(value: string | null): ImportGarment[] {
     .map(item => ({
       garment_type: (item.garment_type as string).trim(),
       quantity: item.quantity as number,
+      price: typeof item.price === 'number' && item.price >= 0 ? item.price : null,
       color: typeof item.color === 'string' && item.color.trim().length > 0 ? item.color.trim() : null,
       sizes: typeof item.sizes === 'string' && item.sizes.trim().length > 0 ? item.sizes.trim() : null,
       supplied_by:

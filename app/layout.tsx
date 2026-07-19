@@ -21,8 +21,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {user ? (
           <div className="flex min-h-screen">
             <Nav />
-            <main className="flex-1 pl-56">
-              <div className="p-8 max-w-6xl">{children}</div>
+            <main className="flex-1 pt-14 md:pl-56 md:pt-0">
+              <div className="max-w-6xl p-4 md:p-8">{children}</div>
             </main>
           </div>
         ) : (

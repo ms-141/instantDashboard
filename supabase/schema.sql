@@ -28,6 +28,7 @@ create table order_logos (
   id            uuid primary key default gen_random_uuid(),
   order_id      uuid not null references orders(id) on delete cascade,
   name          text,
+  price         numeric(10,2),
   width_inches  numeric(6,2) not null,
   height_inches numeric(6,2) not null,
   placement     text not null,
@@ -40,6 +41,7 @@ create table order_garments (
   order_id     uuid not null references orders(id) on delete cascade,
   garment_type text not null,
   quantity     integer not null default 1,
+  price        numeric(10,2),
   color        text,
   sizes        text,
   supplied_by  text not null default 'customer'

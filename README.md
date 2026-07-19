@@ -70,6 +70,7 @@ x-inbound-order-secret: <INBOUND_ORDER_WEBHOOK_SECRET>
   "logos": [
     {
       "name": "Main logo",
+      "price": 35.0,
       "width_inches": 3.5,
       "height_inches": 2.0,
       "placement": "Left Chest",
@@ -80,6 +81,7 @@ x-inbound-order-secret: <INBOUND_ORDER_WEBHOOK_SECRET>
     {
       "garment_type": "Polo",
       "quantity": 12,
+      "price": 18.5,
       "color": "Black",
       "sizes": "M x4, L x6, XL x2",
       "supplied_by": "customer",
@@ -102,7 +104,7 @@ x-inbound-order-secret: <INBOUND_ORDER_WEBHOOK_SECRET>
 
 Everything else is optional.
 
-## Existing deployments: add new table
+## Existing deployments: add new table and price columns
 
 If your app is already running, run this in Supabase SQL Editor once:
 
@@ -151,6 +153,13 @@ begin
   end if;
 end
 $$;
+
+-- If your database was created before price support was added:
+alter table if exists order_logos
+  add column if not exists price numeric(10,2);
+
+alter table if exists order_garments
+  add column if not exists price numeric(10,2);
 ```
 
 ## Deploy (Vercel)

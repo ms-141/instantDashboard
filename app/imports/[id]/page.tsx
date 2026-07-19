@@ -17,6 +17,7 @@ function normalizeLogos(value: unknown): ImportedLogo[] {
     })
     .map(item => ({
       name: typeof item.name === 'string' ? item.name : null,
+      price: typeof item.price === 'number' && item.price >= 0 ? item.price : null,
       width_inches: item.width_inches as number,
       height_inches: item.height_inches as number,
       placement: item.placement as string,
@@ -34,6 +35,7 @@ function normalizeGarments(value: unknown): ImportedGarment[] {
     .map(item => ({
       garment_type: item.garment_type as string,
       quantity: item.quantity as number,
+      price: typeof item.price === 'number' && item.price >= 0 ? item.price : null,
       color: typeof item.color === 'string' ? item.color : null,
       sizes: typeof item.sizes === 'string' ? item.sizes : null,
       supplied_by: item.supplied_by === 'us' ? 'us' : 'customer',

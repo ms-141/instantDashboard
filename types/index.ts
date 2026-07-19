@@ -15,6 +15,7 @@ export interface OrderLogo {
   id: string
   order_id: string
   name: string | null
+  price: number | null
   width_inches: number
   height_inches: number
   placement: string
@@ -26,6 +27,7 @@ export interface OrderGarment {
   order_id: string
   garment_type: string
   quantity: number
+  price: number | null
   color: string | null
   sizes: string | null
   supplied_by: SuppliedBy
@@ -70,6 +72,7 @@ export interface ImportedOrder {
 
 export interface ImportedLogo {
   name: string | null
+  price: number | null
   width_inches: number
   height_inches: number
   placement: string
@@ -79,6 +82,7 @@ export interface ImportedLogo {
 export interface ImportedGarment {
   garment_type: string
   quantity: number
+  price: number | null
   color: string | null
   sizes: string | null
   supplied_by: SuppliedBy
