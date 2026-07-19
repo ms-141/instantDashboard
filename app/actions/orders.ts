@@ -6,16 +6,28 @@ import { revalidatePath } from 'next/cache'
 
 export async function createOrder(formData: FormData) {
   const supabase = await createClient()
+  const orderNumber = (formData.get('order_number') as string)?.trim() || null
+
+  const createPayload: {
+    customer_id: string
+    order_number?: string
+    status: string
+    due_date: string
+    notes: string | null
+  } = {
+    customer_id: formData.get('customer_id') as string,
+    status: formData.get('status') as string,
+    due_date: formData.get('due_date') as string,
+    notes: (formData.get('notes') as string) || null,
+  }
+
+  if (orderNumber) {
+    createPayload.order_number = orderNumber
+  }
 
   const { data: order, error } = await supabase
     .from('orders')
-    .insert({
-      customer_id: formData.get('customer_id') as string,
-      order_number: (formData.get('order_number') as string) || null,
-      status: formData.get('status') as string,
-      due_date: formData.get('due_date') as string,
-      notes: (formData.get('notes') as string) || null,
-    })
+    .insert(createPayload)
     .select()
     .single()
 
@@ -42,16 +54,28 @@ export async function createOrder(formData: FormData) {
 
 export async function updateOrder(orderId: string, formData: FormData) {
   const supabase = await createClient()
+  const orderNumber = (formData.get('order_number') as string)?.trim() || null
+
+  const updatePayload: {
+    customer_id: string
+    order_number?: string
+    status: string
+    due_date: string
+    notes: string | null
+  } = {
+    customer_id: formData.get('customer_id') as string,
+    status: formData.get('status') as string,
+    due_date: formData.get('due_date') as string,
+    notes: (formData.get('notes') as string) || null,
+  }
+
+  if (orderNumber) {
+    updatePayload.order_number = orderNumber
+  }
 
   await supabase
     .from('orders')
-    .update({
-      customer_id: formData.get('customer_id') as string,
-      order_number: (formData.get('order_number') as string) || null,
-      status: formData.get('status') as string,
-      due_date: formData.get('due_date') as string,
-      notes: (formData.get('notes') as string) || null,
-    })
+    .update(updatePayload)
     .eq('id', orderId)
 
   await supabase.from('order_logos').delete().eq('order_id', orderId)

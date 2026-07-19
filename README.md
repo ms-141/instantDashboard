@@ -24,6 +24,8 @@ NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-publishable-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 INBOUND_ORDER_WEBHOOK_SECRET=your-very-long-random-shared-secret
+OLLAMA_BASE_URL=http://127.0.0.1:11434
+OLLAMA_MODEL=gemma4:e2b
 ```
 
 3. Run schema in Supabase SQL editor:
@@ -40,10 +42,13 @@ npm run dev
 
 ## Inbound email -> review queue -> order automation
 
-Use your inbox (`instantembai@gmail.com`) with Make.com or Zapier:
+Use any email automation or local script to POST into your webhook endpoint.
 
 1. Trigger: **New email in Gmail**.
-2. (Optional) Add a parser step to extract order fields from quote-accepted emails.
+2. Choose one payload mode:
+
+- Structured payload: send already-parsed fields (customer_name, due_date, logos, garments, etc).
+- Raw email payload: send `raw_email_text` (plus optional `email_subject`/`email_from`) and let Ollama extract fields.
 3. Action: **Webhooks -> POST** to:
 
 ```text
@@ -56,7 +61,7 @@ https://<your-vercel-domain>/api/inbound-order
 x-inbound-order-secret: <INBOUND_ORDER_WEBHOOK_SECRET>
 ```
 
-5. Send JSON body like:
+5. Structured payload example:
 
 ```json
 {
@@ -91,6 +96,17 @@ x-inbound-order-secret: <INBOUND_ORDER_WEBHOOK_SECRET>
 }
 ```
 
+Raw email payload example (Ollama extraction):
+
+```json
+{
+  "source_identifier": "gmail:18c9c8f6",
+  "email_from": "office@acme.com",
+  "email_subject": "Quote approved - 12 black polos",
+  "raw_email_text": "Hi team, please proceed with 12 black polos for Acme Construction... due July 25. Left chest logo 3.5 x 2.0 in..."
+}
+```
+
 6. The webhook creates a record in **Imported Orders** (not a live order yet):
 
 - Open `/imports`
@@ -99,7 +115,7 @@ x-inbound-order-secret: <INBOUND_ORDER_WEBHOOK_SECRET>
 
 ### Required webhook fields
 
-- `customer_name`
+- `customer_name` OR `raw_email_text`
 - `due_date` is optional in webhook, but required before approval
 
 Everything else is optional.

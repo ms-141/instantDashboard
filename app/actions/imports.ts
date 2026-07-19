@@ -220,15 +220,26 @@ export async function submitImportReview(importId: string, formData: FormData) {
     notes: customerNotes,
   })
 
+  const orderInsertPayload: {
+    customer_id: string
+    order_number?: string
+    status: OrderStatus
+    due_date: string
+    notes: string | null
+  } = {
+    customer_id: customerId,
+    status: orderStatus,
+    due_date: dueDate,
+    notes,
+  }
+
+  if (orderNumber) {
+    orderInsertPayload.order_number = orderNumber
+  }
+
   const { data: createdOrder, error: createOrderError } = await supabase
     .from('orders')
-    .insert({
-      customer_id: customerId,
-      order_number: orderNumber,
-      status: orderStatus,
-      due_date: dueDate,
-      notes,
-    })
+    .insert(orderInsertPayload)
     .select('id')
     .single()
 
