@@ -27,6 +27,7 @@ type Props = {
 
 const emptyLogo = (): ImportedLogo => ({
   name: null,
+  price: null,
   width_inches: 0,
   height_inches: 0,
   placement: 'Left Chest',
@@ -36,6 +37,7 @@ const emptyLogo = (): ImportedLogo => ({
 const emptyGarment = (): ImportedGarment => ({
   garment_type: 'Polo',
   quantity: 1,
+  price: null,
   color: null,
   sizes: null,
   supplied_by: 'customer',
@@ -195,6 +197,18 @@ export default function ImportReviewForm({ importedOrder }: Props) {
                 </select>
               </div>
               <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Price</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={logo.price ?? ''}
+                  onChange={e => updateLogo(i, 'price', e.target.value ? parseFloat(e.target.value) : null)}
+                  placeholder="e.g. 25.00"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Width (inches) *</label>
                 <input
                   type="number"
@@ -299,6 +313,18 @@ export default function ImportReviewForm({ importedOrder }: Props) {
                   value={garment.color ?? ''}
                   onChange={e => updateGarment(i, 'color', e.target.value || null)}
                   placeholder="e.g. Navy Blue"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Price</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={garment.price ?? ''}
+                  onChange={e => updateGarment(i, 'price', e.target.value ? parseFloat(e.target.value) : null)}
+                  placeholder="e.g. 12.50"
                   className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
