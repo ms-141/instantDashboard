@@ -167,11 +167,10 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                     <td className="px-6 py-3 text-gray-600">{g.color || '—'}</td>
                     <td className="px-6 py-3 text-gray-600">{g.sizes || '—'}</td>
                     <td className="px-6 py-3">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                        g.supplied_by === 'us'
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${g.supplied_by === 'us'
                           ? 'bg-indigo-50 text-indigo-700'
                           : 'bg-gray-100 text-gray-600'
-                      }`}>
+                        }`}>
                         {g.supplied_by === 'us' ? 'Us' : 'Customer'}
                       </span>
                     </td>

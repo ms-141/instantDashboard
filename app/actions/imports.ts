@@ -105,7 +105,7 @@ function parseGarments(value: string | null): ImportGarment[] {
       sizes: typeof item.sizes === 'string' && item.sizes.trim().length > 0 ? item.sizes.trim() : null,
       supplied_by:
         typeof item.supplied_by === 'string' &&
-        VALID_SUPPLIED_BY.includes(item.supplied_by as SuppliedBy)
+          VALID_SUPPLIED_BY.includes(item.supplied_by as SuppliedBy)
           ? (item.supplied_by as SuppliedBy)
           : 'customer',
       notes: typeof item.notes === 'string' && item.notes.trim().length > 0 ? item.notes.trim() : null,
