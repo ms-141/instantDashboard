@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { submitImportReview } from '@/app/actions/imports'
-import type { ImportedOrder, ImportedGarment, ImportedLogo } from '@/types'
+import type { Customer, ImportedOrder, ImportedGarment, ImportedLogo } from '@/types'
 import { uploadLogoImage } from '@/utils/supabase/logoUploads'
 
 const PLACEMENTS = [
@@ -24,6 +24,7 @@ const ORDER_STATUS_OPTIONS = [
 
 type Props = {
   importedOrder: ImportedOrder
+  customers: Customer[]
 }
 
 const emptyLogo = (): ImportedLogo => ({
@@ -47,12 +48,25 @@ const emptyGarment = (): ImportedGarment => ({
   notes: null,
 })
 
-export default function ImportReviewForm({ importedOrder }: Props) {
+export default function ImportReviewForm({ importedOrder, customers }: Props) {
   const submitReview = submitImportReview.bind(null, importedOrder.id)
   const [logos, setLogos] = useState<ImportedLogo[]>(importedOrder.logos ?? [emptyLogo()])
   const [garments, setGarments] = useState<ImportedGarment[]>(
     importedOrder.garments ?? [emptyGarment()]
   )
+  const [selectedCustomerId, setSelectedCustomerId] = useState(() => {
+    const customerEmail = importedOrder.customer_email?.trim().toLowerCase()
+    const customerName = importedOrder.customer_name.trim().toLowerCase()
+    const emailMatch = customerEmail
+      ? customers.find(customer => customer.email?.trim().toLowerCase() === customerEmail)
+      : null
+    if (emailMatch) return emailMatch.id
+
+    const nameMatch = customers.find(
+      customer => customer.name.trim().toLowerCase() === customerName
+    )
+    return nameMatch?.id ?? ''
+  })
   const [uploadingLogoIndex, setUploadingLogoIndex] = useState<number | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
 
@@ -82,6 +96,7 @@ export default function ImportReviewForm({ importedOrder }: Props) {
 
   return (
     <form action={submitReview} className="space-y-6 max-w-3xl">
+      <input type="hidden" name="existing_customer_id" value={selectedCustomerId} />
       <input type="hidden" name="logos_json" value={JSON.stringify(logos)} />
       <input type="hidden" name="garments_json" value={JSON.stringify(garments)} />
       {uploadError && (
@@ -127,6 +142,25 @@ export default function ImportReviewForm({ importedOrder }: Props) {
               defaultValue={importedOrder.customer_phone ?? ''}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
+          </div>
+          <div className="col-span-2 rounded-lg border border-amber-200 bg-amber-50 p-4">
+            <label className="block text-sm font-medium text-amber-900 mb-1">Existing Customer Match</label>
+            <select
+              value={selectedCustomerId}
+              onChange={e => setSelectedCustomerId(e.target.value)}
+              className="w-full border border-amber-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+            >
+              <option value="">Create or auto-match from the typed customer details</option>
+              {customers.map(customer => (
+                <option key={customer.id} value={customer.id}>
+                  {customer.name}
+                  {customer.email ? ` · ${customer.email}` : ''}
+                </option>
+              ))}
+            </select>
+            <p className="mt-2 text-xs text-amber-800">
+              Use this when the import should attach to an existing customer even if the typed details vary slightly.
+            </p>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Order Status *</label>

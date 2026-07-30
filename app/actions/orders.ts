@@ -4,9 +4,63 @@ import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 
+function asText(value: FormDataEntryValue | null): string | null {
+  if (typeof value !== 'string') return null
+  const trimmed = value.trim()
+  return trimmed.length > 0 ? trimmed : null
+}
+
+async function ensureCustomerId(params: {
+  customerId: string | null
+  customerName: string | null
+  customerEmail: string | null
+  customerPhone: string | null
+  customerNotes: string | null
+}) {
+  if (params.customerId) {
+    return params.customerId
+  }
+
+  if (!params.customerName) {
+    throw new Error('Customer is required')
+  }
+
+  const supabase = await createClient()
+
+  const { data: existingCustomer, error: lookupError } = await supabase
+    .from('customers')
+    .select('id')
+    .ilike('name', params.customerName)
+    .maybeSingle()
+
+  if (lookupError) throw new Error(lookupError.message)
+  if (existingCustomer?.id) return existingCustomer.id
+
+  const { data: createdCustomer, error: createError } = await supabase
+    .from('customers')
+    .insert({
+      name: params.customerName,
+      email: params.customerEmail,
+      phone: params.customerPhone,
+      notes: params.customerNotes,
+    })
+    .select('id')
+    .single()
+
+  if (createError) throw new Error(createError.message)
+  return createdCustomer.id
+}
+
 export async function createOrder(formData: FormData) {
   const supabase = await createClient()
   const orderNumber = (formData.get('order_number') as string)?.trim() || null
+  const customerId = await ensureCustomerId({
+    customerId: asText(formData.get('customer_id')),
+    customerName: asText(formData.get('customer_name')),
+    customerEmail: asText(formData.get('customer_email')),
+    customerPhone: asText(formData.get('customer_phone')),
+    customerNotes: asText(formData.get('customer_notes')),
+  })
 
   const createPayload: {
     customer_id: string
@@ -15,7 +69,7 @@ export async function createOrder(formData: FormData) {
     due_date: string
     notes: string | null
   } = {
-    customer_id: formData.get('customer_id') as string,
+    customer_id: customerId,
     status: formData.get('status') as string,
     due_date: formData.get('due_date') as string,
     notes: (formData.get('notes') as string) || null,

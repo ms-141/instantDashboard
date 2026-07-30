@@ -37,6 +37,14 @@ interface Props {
 }
 
 export default function OrderForm({ customers, action, order }: Props) {
+  const [customerName, setCustomerName] = useState(() => {
+    if (order?.customer?.name) return order.customer.name
+    return ''
+  })
+  const [customerId, setCustomerId] = useState(order?.customer_id ?? '')
+  const [customerEmail, setCustomerEmail] = useState('')
+  const [customerPhone, setCustomerPhone] = useState('')
+  const [customerNotes, setCustomerNotes] = useState('')
   const [logos, setLogos] = useState<LogoField[]>(
     order?.logos?.map(({ name, image_path, image_url, price, width_inches, height_inches, placement, notes }) =>
       ({ name, image_path, image_url, price, width_inches, height_inches, placement, notes })) ?? [emptyLogo()]
@@ -70,9 +78,22 @@ export default function OrderForm({ customers, action, order }: Props) {
     }
   }
 
+  const onCustomerNameChange = (value: string) => {
+    setCustomerName(value)
+
+    const matchedCustomer = customers.find(customer =>
+      customer.name.trim().toLowerCase() === value.trim().toLowerCase()
+    )
+
+    setCustomerId(matchedCustomer?.id ?? '')
+  }
+
+  const isCreatingNewCustomer = !order && customerName.trim().length > 0 && !customerId
+
   return (
     <form action={action} className="space-y-6 max-w-3xl">
       {/* Pass JSON state as hidden inputs */}
+      <input type="hidden" name="customer_id" value={customerId} />
       <input type="hidden" name="logos" value={JSON.stringify(logos)} />
       <input type="hidden" name="garments" value={JSON.stringify(garments)} />
       {uploadError && (
@@ -87,11 +108,70 @@ export default function OrderForm({ customers, action, order }: Props) {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Customer *</label>
-            <select name="customer_id" required defaultValue={order?.customer_id ?? ''}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-              <option value="">Select customer…</option>
-              {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+            {order ? (
+              <select name="customer_id" required defaultValue={order.customer_id}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="">Select customer…</option>
+                {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            ) : (
+              <>
+                <input
+                  list="customer-options"
+                  name="customer_name"
+                  required
+                  value={customerName}
+                  onChange={e => onCustomerNameChange(e.target.value)}
+                  placeholder="Start typing a customer name"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <datalist id="customer-options">
+                  {customers.map(customer => (
+                    <option key={customer.id} value={customer.name} />
+                  ))}
+                </datalist>
+                <p className="mt-1 text-xs text-gray-500">
+                  Choose an existing customer or type a new name to create one automatically.
+                </p>
+                {isCreatingNewCustomer && (
+                  <div className="mt-3 grid grid-cols-2 gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                    <div>
+                      <label className="block text-xs font-medium text-amber-900 mb-1">Email</label>
+                      <input
+                        type="email"
+                        name="customer_email"
+                        value={customerEmail}
+                        onChange={e => setCustomerEmail(e.target.value)}
+                        placeholder="Optional"
+                        className="w-full border border-amber-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-amber-900 mb-1">Phone</label>
+                      <input
+                        type="text"
+                        name="customer_phone"
+                        value={customerPhone}
+                        onChange={e => setCustomerPhone(e.target.value)}
+                        placeholder="Optional"
+                        className="w-full border border-amber-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-xs font-medium text-amber-900 mb-1">Customer Notes</label>
+                      <textarea
+                        name="customer_notes"
+                        rows={2}
+                        value={customerNotes}
+                        onChange={e => setCustomerNotes(e.target.value)}
+                        placeholder="Optional"
+                        className="w-full border border-amber-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+                      />
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Order Number</label>

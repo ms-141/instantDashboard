@@ -113,11 +113,16 @@ function parseGarments(value: string | null): ImportGarment[] {
 }
 
 async function ensureCustomerId(params: {
+  customerId: string | null
   name: string
   email: string | null
   phone: string | null
   notes: string | null
 }): Promise<string> {
+  if (params.customerId) {
+    return params.customerId
+  }
+
   const supabase = await createClient()
 
   if (params.email) {
@@ -182,6 +187,7 @@ export async function submitImportReview(importId: string, formData: FormData) {
   const customerEmail = asText(formData.get('customer_email'))
   const customerPhone = asText(formData.get('customer_phone'))
   const customerNotes = asText(formData.get('customer_notes'))
+  const selectedCustomerId = asText(formData.get('existing_customer_id'))
   const orderNumber = asText(formData.get('order_number'))
   const dueDate = asDate(asText(formData.get('due_date')))
   const orderStatusRaw = asText(formData.get('order_status'))
@@ -224,6 +230,7 @@ export async function submitImportReview(importId: string, formData: FormData) {
   }
 
   const customerId = await ensureCustomerId({
+    customerId: selectedCustomerId,
     name: customerName,
     email: customerEmail,
     phone: customerPhone,

@@ -2,7 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import ImportReviewForm from '@/components/ImportReviewForm'
-import type { ImportedOrder, ImportedGarment, ImportedLogo } from '@/types'
+import type { Customer, ImportedOrder, ImportedGarment, ImportedLogo } from '@/types'
 
 function normalizeLogos(value: unknown): ImportedLogo[] {
   if (!Array.isArray(value)) return []
@@ -49,11 +49,14 @@ export default async function ImportDetailPage({ params }: { params: Promise<{ i
   const { id } = await params
   const supabase = await createClient()
 
-  const { data } = await supabase
-    .from('imported_orders')
-    .select('*')
-    .eq('id', id)
-    .single()
+  const [{ data }, { data: customers }] = await Promise.all([
+    supabase
+      .from('imported_orders')
+      .select('*')
+      .eq('id', id)
+      .single(),
+    supabase.from('customers').select('*').order('name'),
+  ])
 
   if (!data) notFound()
 
@@ -89,7 +92,7 @@ export default async function ImportDetailPage({ params }: { params: Promise<{ i
         </div>
       )}
 
-      <ImportReviewForm importedOrder={importedOrder} />
+      <ImportReviewForm importedOrder={importedOrder} customers={(customers ?? []) as Customer[]} />
     </div>
   )
 }
