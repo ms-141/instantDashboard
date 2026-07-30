@@ -17,6 +17,8 @@ function normalizeLogos(value: unknown): ImportedLogo[] {
     })
     .map(item => ({
       name: typeof item.name === 'string' ? item.name : null,
+      image_path: typeof item.image_path === 'string' ? item.image_path : null,
+      image_url: typeof item.image_url === 'string' ? item.image_url : null,
       price: typeof item.price === 'number' && item.price >= 0 ? item.price : null,
       width_inches: item.width_inches as number,
       height_inches: item.height_inches as number,

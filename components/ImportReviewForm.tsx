@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { submitImportReview } from '@/app/actions/imports'
 import type { ImportedOrder, ImportedGarment, ImportedLogo } from '@/types'
+import { uploadLogoImage } from '@/utils/supabase/logoUploads'
 
 const PLACEMENTS = [
   'Left Chest', 'Right Chest', 'Center Chest', 'Back', 'Upper Back',
@@ -27,6 +28,8 @@ type Props = {
 
 const emptyLogo = (): ImportedLogo => ({
   name: null,
+  image_path: null,
+  image_url: null,
   price: null,
   width_inches: 0,
   height_inches: 0,
@@ -50,6 +53,8 @@ export default function ImportReviewForm({ importedOrder }: Props) {
   const [garments, setGarments] = useState<ImportedGarment[]>(
     importedOrder.garments ?? [emptyGarment()]
   )
+  const [uploadingLogoIndex, setUploadingLogoIndex] = useState<number | null>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
 
   const updateLogo = (i: number, field: keyof ImportedLogo, value: unknown) =>
     setLogos(prev => prev.map((logo, idx) => (idx === i ? { ...logo, [field]: value } : logo)))
@@ -59,10 +64,31 @@ export default function ImportReviewForm({ importedOrder }: Props) {
       prev.map((garment, idx) => (idx === i ? { ...garment, [field]: value } : garment))
     )
 
+  const onLogoImageChange = async (i: number, file: File | null) => {
+    if (!file) return
+
+    setUploadError(null)
+    setUploadingLogoIndex(i)
+
+    try {
+      const uploaded = await uploadLogoImage(file, 'imports')
+      setLogos(prev => prev.map((logo, idx) => (idx === i ? { ...logo, ...uploaded } : logo)))
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : 'Failed to upload image.')
+    } finally {
+      setUploadingLogoIndex(null)
+    }
+  }
+
   return (
     <form action={submitReview} className="space-y-6 max-w-3xl">
       <input type="hidden" name="logos_json" value={JSON.stringify(logos)} />
       <input type="hidden" name="garments_json" value={JSON.stringify(garments)} />
+      {uploadError && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {uploadError}
+        </div>
+      )}
 
       <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <h2 className="text-base font-semibold text-gray-800 mb-4">Order Details</h2>
@@ -230,6 +256,25 @@ export default function ImportReviewForm({ importedOrder }: Props) {
                   className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Logo Image</label>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={e => onLogoImageChange(i, e.target.files?.[0] ?? null)}
+                  className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700 file:mr-3 file:rounded file:border-0 file:bg-indigo-50 file:px-2 file:py-1 file:text-xs file:font-medium file:text-indigo-700"
+                />
+                {logo.image_url && (
+                  <img
+                    src={logo.image_url}
+                    alt={logo.name ? `${logo.name} preview` : `Logo ${i + 1} preview`}
+                    className="mt-2 h-20 w-20 rounded-md border border-gray-200 object-cover"
+                  />
+                )}
+                {uploadingLogoIndex === i && (
+                  <p className="mt-1 text-xs text-gray-500">Uploading image...</p>
+                )}
+              </div>
               <div className="col-span-2">
                 <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
                 <input
@@ -367,6 +412,7 @@ export default function ImportReviewForm({ importedOrder }: Props) {
           type="submit"
           name="intent"
           value="save"
+          disabled={uploadingLogoIndex !== null}
           className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-200"
         >
           Save Draft
@@ -375,6 +421,7 @@ export default function ImportReviewForm({ importedOrder }: Props) {
           type="submit"
           name="intent"
           value="approve"
+          disabled={uploadingLogoIndex !== null}
           className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700"
         >
           Approve & Create Order

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { Customer, Order, OrderLogo, OrderGarment } from '@/types'
+import { uploadLogoImage } from '@/utils/supabase/logoUploads'
 
 const PLACEMENTS = [
   'Left Chest', 'Right Chest', 'Center Chest', 'Back', 'Upper Back',
@@ -16,7 +17,14 @@ type LogoField = Omit<OrderLogo, 'id' | 'order_id'>
 type GarmentField = Omit<OrderGarment, 'id' | 'order_id'>
 
 const emptyLogo = (): LogoField => ({
-  name: null, price: null, width_inches: 0, height_inches: 0, placement: 'Left Chest', notes: null,
+  name: null,
+  image_path: null,
+  image_url: null,
+  price: null,
+  width_inches: 0,
+  height_inches: 0,
+  placement: 'Left Chest',
+  notes: null,
 })
 const emptyGarment = (): GarmentField => ({
   garment_type: 'Polo', quantity: 1, price: null, color: null, sizes: null, supplied_by: 'customer', notes: null,
@@ -30,13 +38,15 @@ interface Props {
 
 export default function OrderForm({ customers, action, order }: Props) {
   const [logos, setLogos] = useState<LogoField[]>(
-    order?.logos?.map(({ name, price, width_inches, height_inches, placement, notes }) =>
-      ({ name, price, width_inches, height_inches, placement, notes })) ?? [emptyLogo()]
+    order?.logos?.map(({ name, image_path, image_url, price, width_inches, height_inches, placement, notes }) =>
+      ({ name, image_path, image_url, price, width_inches, height_inches, placement, notes })) ?? [emptyLogo()]
   )
   const [garments, setGarments] = useState<GarmentField[]>(
     order?.garments?.map(({ garment_type, quantity, price, color, sizes, supplied_by, notes }) =>
       ({ garment_type, quantity, price, color, sizes, supplied_by, notes })) ?? [emptyGarment()]
   )
+  const [uploadingLogoIndex, setUploadingLogoIndex] = useState<number | null>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
 
   const updateLogo = (i: number, field: keyof LogoField, value: unknown) =>
     setLogos(prev => prev.map((l, idx) => idx === i ? { ...l, [field]: value } : l))
@@ -44,11 +54,32 @@ export default function OrderForm({ customers, action, order }: Props) {
   const updateGarment = (i: number, field: keyof GarmentField, value: unknown) =>
     setGarments(prev => prev.map((g, idx) => idx === i ? { ...g, [field]: value } : g))
 
+  const onLogoImageChange = async (i: number, file: File | null) => {
+    if (!file) return
+
+    setUploadError(null)
+    setUploadingLogoIndex(i)
+
+    try {
+      const uploaded = await uploadLogoImage(file, 'orders')
+      setLogos(prev => prev.map((logo, idx) => (idx === i ? { ...logo, ...uploaded } : logo)))
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : 'Failed to upload image.')
+    } finally {
+      setUploadingLogoIndex(null)
+    }
+  }
+
   return (
     <form action={action} className="space-y-6 max-w-3xl">
       {/* Pass JSON state as hidden inputs */}
       <input type="hidden" name="logos" value={JSON.stringify(logos)} />
       <input type="hidden" name="garments" value={JSON.stringify(garments)} />
+      {uploadError && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {uploadError}
+        </div>
+      )}
 
       {/* Order details */}
       <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
@@ -131,6 +162,25 @@ export default function OrderForm({ customers, action, order }: Props) {
                   className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                   {PLACEMENTS.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Logo Image</label>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={e => onLogoImageChange(i, e.target.files?.[0] ?? null)}
+                  className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700 file:mr-3 file:rounded file:border-0 file:bg-indigo-50 file:px-2 file:py-1 file:text-xs file:font-medium file:text-indigo-700"
+                />
+                {logo.image_url && (
+                  <img
+                    src={logo.image_url}
+                    alt={logo.name ? `${logo.name} preview` : `Logo ${i + 1} preview`}
+                    className="mt-2 h-20 w-20 rounded-md border border-gray-200 object-cover"
+                  />
+                )}
+                {uploadingLogoIndex === i && (
+                  <p className="mt-1 text-xs text-gray-500">Uploading image...</p>
+                )}
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Width (inches) *</label>
@@ -229,6 +279,7 @@ export default function OrderForm({ customers, action, order }: Props) {
 
       <div className="flex gap-3">
         <button type="submit"
+          disabled={uploadingLogoIndex !== null}
           className="bg-indigo-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors">
           {order ? 'Update Order' : 'Create Order'}
         </button>

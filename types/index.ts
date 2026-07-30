@@ -15,6 +15,8 @@ export interface OrderLogo {
   id: string
   order_id: string
   name: string | null
+  image_path: string | null
+  image_url: string | null
   price: number | null
   width_inches: number
   height_inches: number
@@ -72,6 +74,8 @@ export interface ImportedOrder {
 
 export interface ImportedLogo {
   name: string | null
+  image_path: string | null
+  image_url: string | null
   price: number | null
   width_inches: number
   height_inches: number

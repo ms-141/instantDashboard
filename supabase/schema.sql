@@ -93,6 +93,8 @@ create table if not exists public.order_logos (
   id uuid primary key default gen_random_uuid(),
   order_id uuid not null,
   name text,
+  image_path text,
+  image_url text,
   price numeric(10,2),
   width_inches numeric(6,2) not null,
   height_inches numeric(6,2) not null,
@@ -102,6 +104,8 @@ create table if not exists public.order_logos (
 
 alter table public.order_logos add column if not exists order_id uuid;
 alter table public.order_logos add column if not exists name text;
+alter table public.order_logos add column if not exists image_path text;
+alter table public.order_logos add column if not exists image_url text;
 alter table public.order_logos add column if not exists price numeric(10,2);
 alter table public.order_logos add column if not exists width_inches numeric(6,2);
 alter table public.order_logos add column if not exists height_inches numeric(6,2);
@@ -303,6 +307,87 @@ begin
     where schemaname = 'public' and tablename = 'customers' and policyname = 'auth users'
   ) then
     create policy "auth users" on public.customers for all using (auth.role() = 'authenticated');
+  end if;
+end
+$$;
+
+-- Storage bucket + policies for logo image uploads
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+select
+  'logo-images',
+  'logo-images',
+  true,
+  10485760,
+  array['image/jpeg', 'image/png', 'image/webp']::text[]
+where not exists (
+  select 1 from storage.buckets where id = 'logo-images'
+);
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_policies
+    where schemaname = 'storage'
+      and tablename = 'objects'
+      and policyname = 'logo images read'
+  ) then
+    create policy "logo images read"
+      on storage.objects
+      for select
+      using (bucket_id = 'logo-images');
+  end if;
+end
+$$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_policies
+    where schemaname = 'storage'
+      and tablename = 'objects'
+      and policyname = 'logo images write auth users'
+  ) then
+    create policy "logo images write auth users"
+      on storage.objects
+      for insert
+      with check (bucket_id = 'logo-images' and auth.role() = 'authenticated');
+  end if;
+end
+$$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_policies
+    where schemaname = 'storage'
+      and tablename = 'objects'
+      and policyname = 'logo images update auth users'
+  ) then
+    create policy "logo images update auth users"
+      on storage.objects
+      for update
+      using (bucket_id = 'logo-images' and auth.role() = 'authenticated')
+      with check (bucket_id = 'logo-images' and auth.role() = 'authenticated');
+  end if;
+end
+$$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_policies
+    where schemaname = 'storage'
+      and tablename = 'objects'
+      and policyname = 'logo images delete auth users'
+  ) then
+    create policy "logo images delete auth users"
+      on storage.objects
+      for delete
+      using (bucket_id = 'logo-images' and auth.role() = 'authenticated');
   end if;
 end
 $$;

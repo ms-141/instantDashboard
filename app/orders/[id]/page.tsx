@@ -109,6 +109,13 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           <div className="divide-y divide-gray-50">
             {order.logos.map((logo: OrderLogo) => (
               <div key={logo.id} className="px-6 py-4 flex items-start gap-6">
+                {logo.image_url && (
+                  <img
+                    src={logo.image_url}
+                    alt={logo.name ? `${logo.name} logo` : 'Logo image'}
+                    className="h-16 w-16 shrink-0 rounded-md border border-gray-200 object-cover"
+                  />
+                )}
                 <div className="flex-1">
                   <p className="font-medium text-gray-800">{logo.name || 'Untitled Logo'}</p>
                   <p className="text-sm text-gray-500">{logo.placement}</p>

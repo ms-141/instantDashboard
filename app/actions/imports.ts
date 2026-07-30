@@ -7,6 +7,8 @@ import type { OrderStatus, SuppliedBy } from '@/types'
 
 type ImportLogo = {
   name: string | null
+  image_path: string | null
+  image_url: string | null
   price: number | null
   width_inches: number
   height_inches: number
@@ -62,6 +64,14 @@ function parseLogos(value: string | null): ImportLogo[] {
     })
     .map(item => ({
       name: typeof item.name === 'string' && item.name.trim().length > 0 ? item.name.trim() : null,
+      image_path:
+        typeof item.image_path === 'string' && item.image_path.trim().length > 0
+          ? item.image_path.trim()
+          : null,
+      image_url:
+        typeof item.image_url === 'string' && item.image_url.trim().length > 0
+          ? item.image_url.trim()
+          : null,
       price: typeof item.price === 'number' && item.price >= 0 ? item.price : null,
       width_inches: item.width_inches as number,
       height_inches: item.height_inches as number,
