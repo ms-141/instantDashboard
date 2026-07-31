@@ -28,10 +28,12 @@ function formatCurrency(value: number) {
 }
 
 function getOrderTotal(order: {
-  logos?: Array<{ price: number | null }>
+  order_total_override?: number | null
+  logos?: Array<{ price: number | null; quantity?: number | null }>
   garments?: Array<{ price: number | null; quantity: number }>
 }) {
-  const logoTotal = (order.logos ?? []).reduce((sum, logo) => sum + (logo.price ?? 0), 0)
+  if (order.order_total_override != null) return order.order_total_override
+  const logoTotal = (order.logos ?? []).reduce((sum, logo) => sum + (logo.price ?? 0) * (logo.quantity ?? 1), 0)
   const garmentTotal = (order.garments ?? []).reduce(
     (sum, garment) => sum + (garment.price ?? 0) * garment.quantity,
     0
@@ -43,7 +45,7 @@ export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: allOrders } = await supabase
     .from('orders')
-    .select('*, customer:customers(name, contact_name), logos:order_logos(price), garments:order_garments(price, quantity)')
+    .select('*, customer:customers(name, contact_name), logos:order_logos(price, quantity), garments:order_garments(price, quantity)')
     .order('due_date', { ascending: true })
 
   const orders = allOrders ?? []
