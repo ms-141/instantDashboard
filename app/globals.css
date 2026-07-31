@@ -26,6 +26,10 @@ select {
   background-color: #ffffff;
 }
 
+button {
+  cursor: pointer;
+}
+
 input::placeholder,
 textarea::placeholder {
   color: #6b7280;

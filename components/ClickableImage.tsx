@@ -40,11 +40,11 @@ export default function ClickableImage({ src, alt, thumbnailClassName }: Props) 
             <button
                 type="button"
                 onClick={() => setOpen(true)}
-                className="shrink-0 focus:outline-none focus:ring-2 focus:ring-indigo-400 rounded-md block w-full text-left"
+                className="shrink-0 focus:outline-none focus:ring-2 focus:ring-indigo-400 rounded-md"
                 aria-label={`View ${alt}`}
             >
                 {isPdf ? (
-                    <div className="flex items-center gap-3 p-4 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div className="w-full flex items-center gap-3 p-4 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors">
                         <FileIcon />
                         <div>
                             <p className="text-sm font-medium text-gray-700">{alt}</p>

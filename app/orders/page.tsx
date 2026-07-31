@@ -115,9 +115,9 @@ export default async function OrdersPage({
               </thead>
               <tbody>
                 {filtered.map(order => (
-                  <tr key={order.id} className="border-t border-gray-50 hover:bg-gray-50 transition-colors">
+                  <tr key={order.id} className="border-t border-gray-50 hover:bg-gray-50 transition-colors relative cursor-pointer">
                     <td className="px-6 py-3">
-                      <Link href={`/orders/${order.id}`} className="text-indigo-600 hover:underline font-medium">
+                      <Link href={`/orders/${order.id}`} className="text-indigo-600 hover:underline font-medium after:absolute after:inset-0 after:content-[''] relative">
                         {order.order_number || order.id.slice(0, 8)}
                       </Link>
                     </td>
@@ -128,7 +128,7 @@ export default async function OrdersPage({
                     <td className="px-6 py-3"><StatusBadge status={order.status} /></td>
                     <td className="px-6 py-3 text-gray-600">{formatDate(order.due_date)}</td>
                     <td className="px-6 py-3 font-medium text-emerald-700">{formatCurrency(getOrderTotal(order))}</td>
-                    <td className="px-6 py-3">
+                    <td className="px-6 py-3 relative z-10">
                       <div className="flex items-center gap-2">
                         {order.status !== 'completed' && order.status !== 'delivered' && (
                           <form action={markOrderCompleted.bind(null, order.id)}>
