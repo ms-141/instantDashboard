@@ -1,7 +1,7 @@
 import { createClient } from '@/utils/supabase/client'
 
 const BUCKET = 'logo-images'
-const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
+const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf'])
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024
 
 function sanitizeFilename(name: string): string {
@@ -10,7 +10,7 @@ function sanitizeFilename(name: string): string {
 
 export function validateLogoImage(file: File): string | null {
     if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
-        return 'Only JPG, PNG, or WEBP files are allowed.'
+        return 'Only JPG, PNG, WEBP, or PDF files are allowed.'
     }
 
     if (file.size > MAX_IMAGE_BYTES) {

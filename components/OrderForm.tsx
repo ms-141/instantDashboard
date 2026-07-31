@@ -425,7 +425,16 @@ export default function OrderForm({ customers, action, order }: Props) {
                 <div className="flex flex-wrap gap-2 mt-1">
                   {[...(logo.image_url ? [logo.image_url] : []), ...(logo.extra_image_urls ?? [])].map((url, imgIdx) => (
                     <div key={imgIdx} className="relative group">
-                      <img src={url} alt={`Logo image ${imgIdx + 1}`} className="h-16 w-16 rounded-md border border-gray-200 object-cover" />
+                      {url.toLowerCase().includes('.pdf') ? (
+                        <div className="h-16 w-16 rounded-md border border-gray-200 bg-gray-50 flex flex-col items-center justify-center gap-0.5">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-red-400" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6H6zm7 1.5L18.5 9H13V3.5zM8.5 13h1.75c.97 0 1.75.78 1.75 1.75S11.22 16.5 10.25 16.5H9.5V18H8.5v-5zm1 2.5h.75c.41 0 .75-.34.75-.75s-.34-.75-.75-.75H9.5v1.5zm3.5-2.5h1.5c1.1 0 2 .9 2 2v1c0 1.1-.9 2-2 2H13v-5zm1 4h.5c.55 0 1-.45 1-1v-1c0-.55-.45-1-1-1H14v3zm3.5-4h3v1h-2v1h1.5v1H18.5v2h-1v-5z" />
+                          </svg>
+                          <span className="text-xs text-gray-400">PDF</span>
+                        </div>
+                      ) : (
+                        <img src={url} alt={`Logo image ${imgIdx + 1}`} className="h-16 w-16 rounded-md border border-gray-200 object-cover" />
+                      )}
                       <button
                         type="button"
                         onClick={() => removeLogoImage(i, imgIdx)}
@@ -444,7 +453,7 @@ export default function OrderForm({ customers, action, order }: Props) {
                         <span className="text-gray-400 text-xl font-light leading-none">+</span>
                         <input
                           type="file"
-                          accept="image/png,image/jpeg,image/webp"
+                          accept="image/png,image/jpeg,image/webp,application/pdf"
                           className="hidden"
                           onChange={e => onLogoImageChange(i, e.target.files?.[0] ?? null)}
                         />
