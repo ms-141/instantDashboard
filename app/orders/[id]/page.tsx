@@ -6,7 +6,6 @@ import { deleteOrder } from '@/app/actions/orders'
 import DeleteButton from '@/components/DeleteButton'
 import type { OrderLogo, OrderGarment } from '@/types'
 import { formatGarmentSizes } from '@/utils/garmentSizes'
-import IntakeFormViewer from '@/components/IntakeFormViewer'
 import ClickableImage from '@/components/ClickableImage'
 
 function formatDate(d: string) {
@@ -103,7 +102,11 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       {order.intake_form_image_url && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-6 p-6">
           <h2 className="font-semibold text-gray-800 mb-4">Intake Form</h2>
-          <IntakeFormViewer url={order.intake_form_image_url} />
+          <ClickableImage
+            src={order.intake_form_image_url}
+            alt="Intake form"
+            thumbnailClassName="max-h-[32rem] rounded-lg border border-gray-200 object-contain bg-gray-50 hover:opacity-90 transition-opacity"
+          />
         </div>
       )}
 
