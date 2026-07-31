@@ -115,10 +115,10 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
       {order.receipt_image_url && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-6 p-6">
-          <h2 className="font-semibold text-gray-800 mb-4">Receipt</h2>
+          <h2 className="font-semibold text-gray-800 mb-4">Receipt / Invoice</h2>
           <ClickableImage
             src={order.receipt_image_url}
-            alt="Receipt"
+            alt="Receipt / Invoice"
             thumbnailClassName="max-h-[32rem] rounded-lg border border-gray-200 object-contain bg-gray-50 hover:opacity-90 transition-opacity"
           />
         </div>

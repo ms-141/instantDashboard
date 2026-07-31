@@ -342,7 +342,7 @@ export default function OrderForm({ customers, action, order }: Props) {
             <p className="mt-1 text-xs text-gray-400">Set this if you only have the receipt total — it replaces the calculated total everywhere.</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Receipt Image</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Receipt / Invoice</label>
             <input
               type="file"
               accept="image/png,image/jpeg,image/webp,image/heic,image/heif,application/pdf"
@@ -355,7 +355,7 @@ export default function OrderForm({ customers, action, order }: Props) {
                 {receiptImageUrl.toLowerCase().includes('.pdf') || receiptImageUrl.toLowerCase().includes('.heic') ? (
                   <p className="text-xs text-gray-500">File uploaded</p>
                 ) : (
-                  <img src={receiptImageUrl} alt="Receipt preview" className="h-16 rounded border border-gray-200 object-contain" />
+                  <img src={receiptImageUrl} alt="Receipt / Invoice preview" className="h-16 rounded border border-gray-200 object-contain" />
                 )}
                 <button type="button" onClick={() => { setReceiptImagePath(''); setReceiptImageUrl('') }} className="text-xs text-red-500 hover:text-red-700">Remove</button>
               </div>
