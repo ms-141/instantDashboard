@@ -48,6 +48,9 @@ alter table public.orders add column if not exists order_number text;
 alter table public.orders add column if not exists status text;
 alter table public.orders add column if not exists due_date date;
 alter table public.orders add column if not exists notes text;
+alter table public.order_logos add column if not exists extra_image_urls text[] default '{}';
+alter table public.order_logos add column if not exists extra_image_paths text[] default '{}';
+
 alter table public.orders add column if not exists intake_form_image_path text;
 alter table public.orders add column if not exists intake_form_image_url text;
 alter table public.orders add column if not exists created_at timestamptz not null default now();

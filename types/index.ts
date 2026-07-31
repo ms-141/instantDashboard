@@ -18,6 +18,8 @@ export interface OrderLogo {
   name: string | null
   image_path: string | null
   image_url: string | null
+  extra_image_urls: string[] | null
+  extra_image_paths: string[] | null
   price: number | null
   width_inches: number
   height_inches: number

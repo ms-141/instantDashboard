@@ -123,12 +123,24 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           <div className="divide-y divide-gray-50">
             {order.logos.map((logo: OrderLogo) => (
               <div key={logo.id} className="px-6 py-4 flex items-start gap-6">
-                {logo.image_url && (
-                  <ClickableImage
-                    src={logo.image_url}
-                    alt={logo.name ? `${logo.name} logo` : 'Logo image'}
-                    thumbnailClassName="h-16 w-16 rounded-md border border-gray-200 object-cover"
-                  />
+                {(logo.image_url || logo.extra_image_urls?.length) && (
+                  <div className="flex flex-wrap gap-2 shrink-0">
+                    {logo.image_url && (
+                      <ClickableImage
+                        src={logo.image_url}
+                        alt={logo.name ? `${logo.name} logo` : 'Logo image'}
+                        thumbnailClassName="h-16 w-16 rounded-md border border-gray-200 object-cover"
+                      />
+                    )}
+                    {logo.extra_image_urls?.map((url: string, imgIdx: number) => (
+                      <ClickableImage
+                        key={imgIdx}
+                        src={url}
+                        alt={logo.name ? `${logo.name} logo ${imgIdx + 2}` : `Logo image ${imgIdx + 2}`}
+                        thumbnailClassName="h-16 w-16 rounded-md border border-gray-200 object-cover"
+                      />
+                    ))}
+                  </div>
                 )}
                 <div className="flex-1">
                   <p className="font-medium text-gray-800">{logo.name || 'Untitled Logo'}</p>

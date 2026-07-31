@@ -29,6 +29,8 @@ const emptyLogo = (): LogoField => ({
   name: null,
   image_path: null,
   image_url: null,
+  extra_image_urls: [],
+  extra_image_paths: [],
   price: null,
   width_inches: 0,
   height_inches: 0,
@@ -62,8 +64,8 @@ export default function OrderForm({ customers, action, order }: Props) {
   const [intakeFormImagePath, setIntakeFormImagePath] = useState(() => order?.intake_form_image_path ?? '')
   const [intakeFormImageUrl, setIntakeFormImageUrl] = useState(() => order?.intake_form_image_url ?? '')
   const [logos, setLogos] = useState<LogoField[]>(
-    order?.logos?.map(({ name, image_path, image_url, price, width_inches, height_inches, placement, notes }) =>
-      ({ name, image_path, image_url, price, width_inches, height_inches, placement, notes })) ?? [emptyLogo()]
+    order?.logos?.map(({ name, image_path, image_url, extra_image_urls, extra_image_paths, price, width_inches, height_inches, placement, notes }) =>
+      ({ name, image_path, image_url, extra_image_urls: extra_image_urls ?? [], extra_image_paths: extra_image_paths ?? [], price, width_inches, height_inches, placement, notes })) ?? [emptyLogo()]
   )
   const [garments, setGarments] = useState<GarmentField[]>(
     order?.garments?.map(({ garment_type, quantity, price, color, sizes, supplied_by, notes }) =>
@@ -87,12 +89,40 @@ export default function OrderForm({ customers, action, order }: Props) {
 
     try {
       const uploaded = await uploadLogoImage(file, 'orders')
-      setLogos(prev => prev.map((logo, idx) => (idx === i ? { ...logo, ...uploaded } : logo)))
+      setLogos(prev => prev.map((logo, idx) => {
+        if (idx !== i) return logo
+        // First image becomes the primary; subsequent go into extras
+        if (!logo.image_url) {
+          return { ...logo, image_url: uploaded.image_url, image_path: uploaded.image_path }
+        }
+        return {
+          ...logo,
+          extra_image_urls: [...(logo.extra_image_urls ?? []), uploaded.image_url],
+          extra_image_paths: [...(logo.extra_image_paths ?? []), uploaded.image_path],
+        }
+      }))
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : 'Failed to upload image.')
     } finally {
       setUploadingLogoIndex(null)
     }
+  }
+
+  const removeLogoImage = (i: number, imgIndex: number) => {
+    setLogos(prev => prev.map((logo, idx) => {
+      if (idx !== i) return logo
+      const urls = [...(logo.image_url ? [logo.image_url] : []), ...(logo.extra_image_urls ?? [])]
+      const paths = [...(logo.image_path ? [logo.image_path] : []), ...(logo.extra_image_paths ?? [])]
+      const newUrls = urls.filter((_, j) => j !== imgIndex)
+      const newPaths = paths.filter((_, j) => j !== imgIndex)
+      return {
+        ...logo,
+        image_url: newUrls[0] ?? null,
+        image_path: newPaths[0] ?? null,
+        extra_image_urls: newUrls.slice(1),
+        extra_image_paths: newPaths.slice(1),
+      }
+    }))
   }
 
   const onIntakeFormImageChange = async (file: File | null) => {
@@ -391,23 +421,37 @@ export default function OrderForm({ customers, action, order }: Props) {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Logo Image</label>
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  onChange={e => onLogoImageChange(i, e.target.files?.[0] ?? null)}
-                  className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700 file:mr-3 file:rounded file:border-0 file:bg-indigo-50 file:px-2 file:py-1 file:text-xs file:font-medium file:text-indigo-700"
-                />
-                {logo.image_url && (
-                  <img
-                    src={logo.image_url}
-                    alt={logo.name ? `${logo.name} preview` : `Logo ${i + 1} preview`}
-                    className="mt-2 h-20 w-20 rounded-md border border-gray-200 object-cover"
-                  />
-                )}
-                {uploadingLogoIndex === i && (
-                  <p className="mt-1 text-xs text-gray-500">Uploading image...</p>
-                )}
+                <label className="block text-xs font-medium text-gray-600 mb-1">Logo Images</label>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {[...(logo.image_url ? [logo.image_url] : []), ...(logo.extra_image_urls ?? [])].map((url, imgIdx) => (
+                    <div key={imgIdx} className="relative group">
+                      <img src={url} alt={`Logo image ${imgIdx + 1}`} className="h-16 w-16 rounded-md border border-gray-200 object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removeLogoImage(i, imgIdx)}
+                        className="absolute -top-1 -right-1 bg-white border border-gray-200 text-gray-400 hover:text-red-600 rounded-full w-5 h-5 text-sm flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                        aria-label="Remove image"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                  <label className="h-16 w-16 rounded-md border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition-colors">
+                    {uploadingLogoIndex === i ? (
+                      <span className="text-xs text-gray-400">…</span>
+                    ) : (
+                      <>
+                        <span className="text-gray-400 text-xl font-light leading-none">+</span>
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp"
+                          className="hidden"
+                          onChange={e => onLogoImageChange(i, e.target.files?.[0] ?? null)}
+                        />
+                      </>
+                    )}
+                  </label>
+                </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Width (inches) *</label>
