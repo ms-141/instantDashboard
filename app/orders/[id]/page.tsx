@@ -7,6 +7,7 @@ import DeleteButton from '@/components/DeleteButton'
 import type { OrderLogo, OrderGarment } from '@/types'
 import { formatGarmentSizes } from '@/utils/garmentSizes'
 import IntakeFormViewer from '@/components/IntakeFormViewer'
+import ClickableImage from '@/components/ClickableImage'
 
 function formatDate(d: string) {
   return new Date(d + 'T00:00:00').toLocaleDateString('en-US', {
@@ -120,10 +121,10 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
             {order.logos.map((logo: OrderLogo) => (
               <div key={logo.id} className="px-6 py-4 flex items-start gap-6">
                 {logo.image_url && (
-                  <img
+                  <ClickableImage
                     src={logo.image_url}
                     alt={logo.name ? `${logo.name} logo` : 'Logo image'}
-                    className="h-16 w-16 shrink-0 rounded-md border border-gray-200 object-cover"
+                    thumbnailClassName="h-16 w-16 rounded-md border border-gray-200 object-cover"
                   />
                 )}
                 <div className="flex-1">
