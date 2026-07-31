@@ -51,6 +51,11 @@ alter table public.orders add column if not exists notes text;
 alter table public.order_logos add column if not exists extra_image_urls text[] default '{}';
 alter table public.order_logos add column if not exists extra_image_paths text[] default '{}';
 
+-- Allow PDFs and HEIC uploads in the logo-images storage bucket
+update storage.buckets
+set allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'application/pdf']
+where id = 'logo-images';
+
 alter table public.orders add column if not exists intake_form_image_path text;
 alter table public.orders add column if not exists intake_form_image_url text;
 alter table public.orders add column if not exists created_at timestamptz not null default now();
