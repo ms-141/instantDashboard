@@ -76,7 +76,6 @@ export default async function DashboardPage({
   searchParams: Promise<{ period?: string }>
 }) {
   const { period = 'month' } = await searchParams
-  const { period = 'month' } = await searchParams
   const supabase = await createClient()
   const { data: allOrders } = await supabase
     .from('orders')
