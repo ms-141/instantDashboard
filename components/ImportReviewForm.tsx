@@ -385,17 +385,17 @@ export default function ImportReviewForm({ importedOrder, customers }: Props) {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Type *</label>
-                <select
+                <input
+                  list={`garment-types-${i}`}
+                  required
                   value={garment.garment_type}
                   onChange={e => updateGarment(i, 'garment_type', e.target.value)}
+                  placeholder="Select or type a garment type"
                   className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  {GARMENT_TYPES.map(type => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </select>
+                />
+                <datalist id={`garment-types-${i}`}>
+                  {GARMENT_TYPES.map(type => <option key={type} value={type} />)}
+                </datalist>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Supplied By</label>
