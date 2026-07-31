@@ -49,7 +49,7 @@ function rowsFromEntries(entries: Array<[string, unknown]>): GarmentSizeRow[] {
     }
 
     return [
-        ...STANDARD_GARMENT_SIZES.map(label => standardRows.get(label) ?? { label, quantity: '' }),
+        ...STANDARD_GARMENT_SIZES.map(label => standardRows.get(label) ?? ({ label, quantity: '' as const satisfies number | '' })),
         ...customRows,
     ]
 }
