@@ -30,7 +30,7 @@ export default async function ImportsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-gray-400 text-xs uppercase tracking-wide">
-                  <th className="px-6 py-3 font-medium">Customer</th>
+                  <th className="px-6 py-3 font-medium">Company</th>
                   <th className="px-6 py-3 font-medium">Due Date</th>
                   <th className="px-6 py-3 font-medium">Order Status</th>
                   <th className="px-6 py-3 font-medium">Imported At</th>

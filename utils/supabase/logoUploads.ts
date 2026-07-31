@@ -46,3 +46,30 @@ export async function uploadLogoImage(file: File, scope: 'orders' | 'imports') {
         image_url: data.publicUrl,
     }
 }
+
+export async function uploadOrderIntakeFormImage(file: File) {
+    const validationError = validateLogoImage(file)
+    if (validationError) {
+        throw new Error(validationError)
+    }
+
+    const supabase = createClient()
+    const objectPath = `orders/intake-forms/${crypto.randomUUID()}-${sanitizeFilename(file.name)}`
+
+    const { error } = await supabase.storage.from(BUCKET).upload(objectPath, file, {
+        cacheControl: '3600',
+        contentType: file.type,
+        upsert: false,
+    })
+
+    if (error) {
+        throw new Error(error.message)
+    }
+
+    const { data } = supabase.storage.from(BUCKET).getPublicUrl(objectPath)
+
+    return {
+        intake_form_image_path: objectPath,
+        intake_form_image_url: data.publicUrl,
+    }
+}

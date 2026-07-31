@@ -15,7 +15,7 @@ export default async function NewOrderPage() {
       <h1 className="text-2xl font-bold text-gray-900 mb-6">New Order</h1>
       {!customers?.length && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-sm text-amber-800">
-          No customers yet. Type a customer name in the form below and it will be created with the order.
+          No companies yet. Type a company name in the form below and it will be created with the order.
         </div>
       )}
       <OrderForm customers={customers ?? []} action={createOrder} />

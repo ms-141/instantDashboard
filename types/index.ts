@@ -5,6 +5,7 @@ export type ImportReviewStatus = 'pending' | 'approved' | 'rejected'
 export interface Customer {
   id: string
   name: string
+  contact_name: string | null
   email: string | null
   phone: string | null
   notes: string | null
@@ -43,6 +44,8 @@ export interface Order {
   status: OrderStatus
   due_date: string
   notes: string | null
+  intake_form_image_path: string | null
+  intake_form_image_url: string | null
   created_at: string
   updated_at: string
   customer?: Customer
@@ -56,6 +59,7 @@ export interface ImportedOrder {
   source_identifier: string | null
   review_status: ImportReviewStatus
   customer_name: string
+  contact_name: string | null
   customer_email: string | null
   customer_phone: string | null
   customer_notes: string | null

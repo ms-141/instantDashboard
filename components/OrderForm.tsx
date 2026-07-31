@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import type { Customer, Order, OrderLogo, OrderGarment } from '@/types'
-import { uploadLogoImage } from '@/utils/supabase/logoUploads'
+import { uploadLogoImage, uploadOrderIntakeFormImage } from '@/utils/supabase/logoUploads'
 
 const PLACEMENTS = [
   'Left Chest', 'Right Chest', 'Center Chest', 'Back', 'Upper Back',
@@ -42,9 +42,12 @@ export default function OrderForm({ customers, action, order }: Props) {
     return ''
   })
   const [customerId, setCustomerId] = useState(order?.customer_id ?? '')
+  const [contactName, setContactName] = useState(() => order?.customer?.contact_name ?? '')
   const [customerEmail, setCustomerEmail] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
   const [customerNotes, setCustomerNotes] = useState('')
+  const [intakeFormImagePath, setIntakeFormImagePath] = useState(() => order?.intake_form_image_path ?? '')
+  const [intakeFormImageUrl, setIntakeFormImageUrl] = useState(() => order?.intake_form_image_url ?? '')
   const [logos, setLogos] = useState<LogoField[]>(
     order?.logos?.map(({ name, image_path, image_url, price, width_inches, height_inches, placement, notes }) =>
       ({ name, image_path, image_url, price, width_inches, height_inches, placement, notes })) ?? [emptyLogo()]
@@ -54,6 +57,7 @@ export default function OrderForm({ customers, action, order }: Props) {
       ({ garment_type, quantity, price, color, sizes, supplied_by, notes })) ?? [emptyGarment()]
   )
   const [uploadingLogoIndex, setUploadingLogoIndex] = useState<number | null>(null)
+  const [uploadingIntakeForm, setUploadingIntakeForm] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
 
   const updateLogo = (i: number, field: keyof LogoField, value: unknown) =>
@@ -78,6 +82,23 @@ export default function OrderForm({ customers, action, order }: Props) {
     }
   }
 
+  const onIntakeFormImageChange = async (file: File | null) => {
+    if (!file) return
+
+    setUploadError(null)
+    setUploadingIntakeForm(true)
+
+    try {
+      const uploaded = await uploadOrderIntakeFormImage(file)
+      setIntakeFormImagePath(uploaded.intake_form_image_path)
+      setIntakeFormImageUrl(uploaded.intake_form_image_url)
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : 'Failed to upload image.')
+    } finally {
+      setUploadingIntakeForm(false)
+    }
+  }
+
   const onCustomerNameChange = (value: string) => {
     setCustomerName(value)
 
@@ -94,6 +115,9 @@ export default function OrderForm({ customers, action, order }: Props) {
     <form action={action} className="space-y-6 max-w-3xl">
       {/* Pass JSON state as hidden inputs */}
       <input type="hidden" name="customer_id" value={customerId} />
+      <input type="hidden" name="contact_name" value={contactName} />
+      <input type="hidden" name="intake_form_image_path" value={intakeFormImagePath} />
+      <input type="hidden" name="intake_form_image_url" value={intakeFormImageUrl} />
       <input type="hidden" name="logos" value={JSON.stringify(logos)} />
       <input type="hidden" name="garments" value={JSON.stringify(garments)} />
       {uploadError && (
@@ -107,11 +131,11 @@ export default function OrderForm({ customers, action, order }: Props) {
         <h2 className="text-base font-semibold text-gray-800 mb-4">Order Details</h2>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Customer *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Company *</label>
             {order ? (
               <select name="customer_id" required defaultValue={order.customer_id}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                <option value="">Select customer…</option>
+                <option value="">Select company…</option>
                 {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             ) : (
@@ -122,7 +146,7 @@ export default function OrderForm({ customers, action, order }: Props) {
                   required
                   value={customerName}
                   onChange={e => onCustomerNameChange(e.target.value)}
-                  placeholder="Start typing a customer name"
+                  placeholder="Start typing a company name"
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
                 <datalist id="customer-options">
@@ -131,10 +155,21 @@ export default function OrderForm({ customers, action, order }: Props) {
                   ))}
                 </datalist>
                 <p className="mt-1 text-xs text-gray-500">
-                  Choose an existing customer or type a new name to create one automatically.
+                  Choose an existing company or type a new company name to create one automatically.
                 </p>
                 {isCreatingNewCustomer && (
                   <div className="mt-3 grid grid-cols-2 gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                    <div>
+                      <label className="block text-xs font-medium text-amber-900 mb-1">Contact Name</label>
+                      <input
+                        type="text"
+                        name="contact_name_input"
+                        value={contactName}
+                        onChange={e => setContactName(e.target.value)}
+                        placeholder="Optional"
+                        className="w-full border border-amber-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+                      />
+                    </div>
                     <div>
                       <label className="block text-xs font-medium text-amber-900 mb-1">Email</label>
                       <input
@@ -158,7 +193,7 @@ export default function OrderForm({ customers, action, order }: Props) {
                       />
                     </div>
                     <div className="col-span-2">
-                      <label className="block text-xs font-medium text-amber-900 mb-1">Customer Notes</label>
+                      <label className="block text-xs font-medium text-amber-900 mb-1">Company Notes</label>
                       <textarea
                         name="customer_notes"
                         rows={2}
@@ -199,6 +234,40 @@ export default function OrderForm({ customers, action, order }: Props) {
             <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
             <textarea name="notes" rows={2} defaultValue={order?.notes ?? ''}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+          <div className="col-span-2 rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <div>
+                <label className="block text-sm font-medium text-slate-900">Order Intake Form Image</label>
+                <p className="text-xs text-slate-600 mt-1">Optional photo or scan of the paper intake form.</p>
+              </div>
+              {intakeFormImageUrl && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIntakeFormImagePath('')
+                    setIntakeFormImageUrl('')
+                  }}
+                  className="text-xs text-red-600 hover:text-red-700 font-medium"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              onChange={e => onIntakeFormImageChange(e.target.files?.[0] ?? null)}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            {uploadingIntakeForm && <p className="mt-2 text-xs text-slate-500">Uploading image...</p>}
+            {intakeFormImageUrl && (
+              <img
+                src={intakeFormImageUrl}
+                alt="Order intake form preview"
+                className="mt-3 max-h-56 rounded-lg border border-slate-200 object-contain bg-white"
+              />
+            )}
           </div>
         </div>
       </section>

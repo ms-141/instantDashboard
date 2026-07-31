@@ -13,6 +13,7 @@ function asText(value: FormDataEntryValue | null): string | null {
 async function ensureCustomerId(params: {
   customerId: string | null
   customerName: string | null
+  contactName: string | null
   customerEmail: string | null
   customerPhone: string | null
   customerNotes: string | null
@@ -40,6 +41,7 @@ async function ensureCustomerId(params: {
     .from('customers')
     .insert({
       name: params.customerName,
+      contact_name: params.contactName,
       email: params.customerEmail,
       phone: params.customerPhone,
       notes: params.customerNotes,
@@ -57,6 +59,7 @@ export async function createOrder(formData: FormData) {
   const customerId = await ensureCustomerId({
     customerId: asText(formData.get('customer_id')),
     customerName: asText(formData.get('customer_name')),
+    contactName: asText(formData.get('contact_name')),
     customerEmail: asText(formData.get('customer_email')),
     customerPhone: asText(formData.get('customer_phone')),
     customerNotes: asText(formData.get('customer_notes')),
@@ -68,11 +71,15 @@ export async function createOrder(formData: FormData) {
     status: string
     due_date: string
     notes: string | null
+    intake_form_image_path: string | null
+    intake_form_image_url: string | null
   } = {
     customer_id: customerId,
     status: formData.get('status') as string,
     due_date: formData.get('due_date') as string,
     notes: (formData.get('notes') as string) || null,
+    intake_form_image_path: asText(formData.get('intake_form_image_path')),
+    intake_form_image_url: asText(formData.get('intake_form_image_url')),
   }
 
   if (orderNumber) {
@@ -116,11 +123,15 @@ export async function updateOrder(orderId: string, formData: FormData) {
     status: string
     due_date: string
     notes: string | null
+    intake_form_image_path: string | null
+    intake_form_image_url: string | null
   } = {
     customer_id: formData.get('customer_id') as string,
     status: formData.get('status') as string,
     due_date: formData.get('due_date') as string,
     notes: (formData.get('notes') as string) || null,
+    intake_form_image_path: asText(formData.get('intake_form_image_path')),
+    intake_form_image_url: asText(formData.get('intake_form_image_url')),
   }
 
   if (orderNumber) {

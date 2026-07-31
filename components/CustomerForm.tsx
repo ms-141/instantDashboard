@@ -16,8 +16,14 @@ export default function CustomerForm({ customer }: Props) {
     <form action={action} className="max-w-lg space-y-4">
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Company Name *</label>
           <input type="text" name="name" required defaultValue={customer?.name}
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Contact Name</label>
+          <input type="text" name="contact_name" defaultValue={customer?.contact_name ?? ''}
+            placeholder="Person to speak with"
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
         </div>
         <div>
@@ -39,7 +45,7 @@ export default function CustomerForm({ customer }: Props) {
       <div className="flex gap-3">
         <button type="submit"
           className="bg-indigo-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors">
-          {customer ? 'Update Customer' : 'Create Customer'}
+          {customer ? 'Update Company' : 'Create Company'}
         </button>
         <a href={customer ? `/customers/${customer.id}` : '/customers'}
           className="text-sm text-gray-500 hover:text-gray-700 px-4 py-2">

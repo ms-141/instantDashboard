@@ -9,13 +9,13 @@ const links = [
   { href: '/', label: '📊 Dashboard' },
   { href: '/orders', label: '📋 Orders' },
   { href: '/imports', label: '📥 Imported' },
-  { href: '/customers', label: '👥 Customers' },
+  { href: '/customers', label: '👥 Companies' },
 ]
 
 function getMobileTitle(pathname: string) {
   if (pathname.startsWith('/orders')) return 'Orders'
   if (pathname.startsWith('/imports')) return 'Imported Orders'
-  if (pathname.startsWith('/customers')) return 'Customers'
+  if (pathname.startsWith('/customers')) return 'Companies'
   return 'Dashboard'
 }
 
@@ -60,9 +60,8 @@ export default function Nav() {
       )}
 
       <nav
-        className={`fixed left-0 top-0 z-40 flex h-full w-56 flex-col bg-indigo-900 text-white transition-transform duration-200 md:translate-x-0 ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={`fixed left-0 top-0 z-40 flex h-full w-56 flex-col bg-indigo-900 text-white transition-transform duration-200 md:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
       >
         <div className="flex items-start justify-between border-b border-indigo-800 p-6">
           <span className="text-lg font-bold leading-tight">Embroidery<br />Orders</span>
@@ -81,11 +80,10 @@ export default function Nav() {
               <Link
                 href={href}
                 onClick={() => setIsOpen(false)}
-                className={`block rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                  pathname === href
+                className={`block rounded-lg px-3 py-2 text-sm font-medium transition-colors ${pathname === href
                     ? 'bg-indigo-700 text-white'
                     : 'text-indigo-200 hover:bg-indigo-800 hover:text-white'
-                }`}
+                  }`}
               >
                 {label}
               </Link>

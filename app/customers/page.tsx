@@ -11,17 +11,17 @@ export default async function CustomersPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Companies</h1>
         <Link href="/customers/new"
           className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors">
-          + New Customer
+          + New Company
         </Link>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100">
         {!customers?.length ? (
           <p className="text-gray-400 text-sm px-6 py-10 text-center">
-            No customers yet.{' '}
+            No companies yet.{' '}
             <Link href="/customers/new" className="text-indigo-600 hover:underline">Add one?</Link>
           </p>
         ) : (
@@ -29,7 +29,8 @@ export default async function CustomersPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-gray-400 text-xs uppercase tracking-wide">
-                  <th className="px-6 py-3 font-medium">Name</th>
+                  <th className="px-6 py-3 font-medium">Company</th>
+                  <th className="px-6 py-3 font-medium">Contact Name</th>
                   <th className="px-6 py-3 font-medium">Email</th>
                   <th className="px-6 py-3 font-medium">Phone</th>
                   <th className="px-6 py-3 font-medium">Orders</th>
@@ -43,6 +44,7 @@ export default async function CustomersPage() {
                         {c.name}
                       </Link>
                     </td>
+                    <td className="px-6 py-3 text-gray-500">{c.contact_name || '—'}</td>
                     <td className="px-6 py-3 text-gray-500">{c.email || '—'}</td>
                     <td className="px-6 py-3 text-gray-500">{c.phone || '—'}</td>
                     <td className="px-6 py-3 text-gray-600">{(c.orders as { count: number }[])?.[0]?.count ?? 0}</td>

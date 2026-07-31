@@ -11,6 +11,7 @@ export async function createCustomer(formData: FormData) {
     .from('customers')
     .insert({
       name: formData.get('name') as string,
+      contact_name: (formData.get('contact_name') as string) || null,
       email: (formData.get('email') as string) || null,
       phone: (formData.get('phone') as string) || null,
       notes: (formData.get('notes') as string) || null,
@@ -31,6 +32,7 @@ export async function updateCustomer(customerId: string, formData: FormData) {
     .from('customers')
     .update({
       name: formData.get('name') as string,
+      contact_name: (formData.get('contact_name') as string) || null,
       email: (formData.get('email') as string) || null,
       phone: (formData.get('phone') as string) || null,
       notes: (formData.get('notes') as string) || null,

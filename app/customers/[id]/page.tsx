@@ -28,11 +28,14 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
   return (
     <div className="max-w-3xl">
       <div className="flex items-center gap-3 mb-6">
-        <Link href="/customers" className="text-gray-400 hover:text-gray-600 text-sm">← Customers</Link>
+        <Link href="/customers" className="text-gray-400 hover:text-gray-600 text-sm">← Companies</Link>
       </div>
 
       <div className="flex items-start justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">{customer.name}</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">{customer.name}</h1>
+          {customer.contact_name && <p className="text-sm text-gray-500 mt-1">Contact: {customer.contact_name}</p>}
+        </div>
         <div className="flex gap-2">
           <Link href={`/customers/${id}/edit`}
             className="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors">
@@ -41,7 +44,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
           {!orders?.length && (
             <DeleteButton
               action={deleteThisCustomer}
-              message="Delete this customer?"
+              message="Delete this company?"
             />
           )}
         </div>
@@ -55,6 +58,10 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
         <div className="bg-white rounded-xl border border-gray-100 p-4">
           <p className="text-xs text-gray-400 mb-1">Phone</p>
           <p className="text-gray-800">{customer.phone || '—'}</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-100 p-4">
+          <p className="text-xs text-gray-400 mb-1">Contact Name</p>
+          <p className="text-gray-800">{customer.contact_name || '—'}</p>
         </div>
         {customer.notes && (
           <div className="col-span-2 bg-white rounded-xl border border-gray-100 p-4">

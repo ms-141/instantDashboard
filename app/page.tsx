@@ -43,7 +43,7 @@ export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: allOrders } = await supabase
     .from('orders')
-    .select('*, customer:customers(name), logos:order_logos(price), garments:order_garments(price, quantity)')
+    .select('*, customer:customers(name, contact_name), logos:order_logos(price), garments:order_garments(price, quantity)')
     .order('due_date', { ascending: true })
 
   const orders = allOrders ?? []
@@ -65,11 +65,11 @@ export default async function DashboardPage() {
   const completedThisMonthValue = completedThisMonth.reduce((sum, order) => sum + getOrderTotal(order), 0)
 
   const stats = [
-    { label: 'Active Orders',        value: active.length,              cls: 'bg-indigo-50 text-indigo-700 border-indigo-100' },
-    { label: 'Overdue',              value: overdue.length,             cls: overdue.length > 0 ? 'bg-red-50 text-red-700 border-red-100' : 'bg-gray-50 text-gray-600 border-gray-100' },
-    { label: 'Due This Week',        value: dueThisWeek.length,         cls: dueThisWeek.length > 0 ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-gray-50 text-gray-600 border-gray-100' },
-    { label: 'Completed This Month', value: completedThisMonth.length,  cls: 'bg-green-50 text-green-700 border-green-100' },
-    { label: 'Active Value',         value: formatCurrency(activeValue), cls: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
+    { label: 'Active Orders', value: active.length, cls: 'bg-indigo-50 text-indigo-700 border-indigo-100' },
+    { label: 'Overdue', value: overdue.length, cls: overdue.length > 0 ? 'bg-red-50 text-red-700 border-red-100' : 'bg-gray-50 text-gray-600 border-gray-100' },
+    { label: 'Due This Week', value: dueThisWeek.length, cls: dueThisWeek.length > 0 ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-gray-50 text-gray-600 border-gray-100' },
+    { label: 'Completed This Month', value: completedThisMonth.length, cls: 'bg-green-50 text-green-700 border-green-100' },
+    { label: 'Active Value', value: formatCurrency(activeValue), cls: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
     { label: 'Completed Value (Month)', value: formatCurrency(completedThisMonthValue), cls: 'bg-teal-50 text-teal-700 border-teal-100' },
   ]
 
@@ -111,7 +111,7 @@ export default async function DashboardPage() {
               <thead>
                 <tr className="text-left text-gray-400 text-xs uppercase tracking-wide">
                   <th className="px-6 py-3 font-medium">Order #</th>
-                  <th className="px-6 py-3 font-medium">Customer</th>
+                  <th className="px-6 py-3 font-medium">Company</th>
                   <th className="px-6 py-3 font-medium">Status</th>
                   <th className="px-6 py-3 font-medium">Due Date</th>
                   <th className="px-6 py-3 font-medium">Total</th>
@@ -126,7 +126,10 @@ export default async function DashboardPage() {
                         {order.order_number || order.id.slice(0, 8)}
                       </Link>
                     </td>
-                    <td className="px-6 py-3 text-gray-700">{order.customer?.name}</td>
+                    <td className="px-6 py-3 text-gray-700">
+                      <div className="font-medium">{order.customer?.name}</div>
+                      {order.customer?.contact_name && <div className="text-xs text-gray-400">{order.customer.contact_name}</div>}
+                    </td>
                     <td className="px-6 py-3"><StatusBadge status={order.status} /></td>
                     <td className={`px-6 py-3 ${dueDateClass(order.due_date)}`}>
                       {formatDate(order.due_date)}

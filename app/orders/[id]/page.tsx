@@ -70,10 +70,11 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-xl border border-gray-100 p-4">
-          <p className="text-xs text-gray-400 mb-1">Customer</p>
+          <p className="text-xs text-gray-400 mb-1">Company</p>
           <Link href={`/customers/${order.customer.id}`} className="font-medium text-indigo-700 hover:underline">
             {order.customer.name}
           </Link>
+          {order.customer.contact_name && <p className="text-sm text-gray-500 mt-0.5">{order.customer.contact_name}</p>}
           {order.customer.phone && <p className="text-sm text-gray-500 mt-0.5">{order.customer.phone}</p>}
         </div>
         <div className="bg-white rounded-xl border border-gray-100 p-4">
@@ -93,6 +94,19 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       {order.notes && (
         <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 mb-6 text-sm text-amber-800">
           <strong>Notes:</strong> {order.notes}
+        </div>
+      )}
+
+      {order.intake_form_image_url && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-6 p-6">
+          <h2 className="font-semibold text-gray-800 mb-4">Intake Form</h2>
+          <a href={order.intake_form_image_url} target="_blank" rel="noreferrer" className="block">
+            <img
+              src={order.intake_form_image_url}
+              alt="Order intake form"
+              className="max-h-[32rem] rounded-lg border border-gray-200 object-contain bg-gray-50"
+            />
+          </a>
         </div>
       )}
 
@@ -168,8 +182,8 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                     <td className="px-6 py-3 text-gray-600">{g.sizes || '—'}</td>
                     <td className="px-6 py-3">
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${g.supplied_by === 'us'
-                          ? 'bg-indigo-50 text-indigo-700'
-                          : 'bg-gray-100 text-gray-600'
+                        ? 'bg-indigo-50 text-indigo-700'
+                        : 'bg-gray-100 text-gray-600'
                         }`}>
                         {g.supplied_by === 'us' ? 'Us' : 'Customer'}
                       </span>

@@ -69,6 +69,7 @@ export default function ImportReviewForm({ importedOrder, customers }: Props) {
   })
   const [uploadingLogoIndex, setUploadingLogoIndex] = useState<number | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const [contactName, setContactName] = useState(() => importedOrder.contact_name ?? '')
 
   const updateLogo = (i: number, field: keyof ImportedLogo, value: unknown) =>
     setLogos(prev => prev.map((logo, idx) => (idx === i ? { ...logo, [field]: value } : logo)))
@@ -109,7 +110,7 @@ export default function ImportReviewForm({ importedOrder, customers }: Props) {
         <h2 className="text-base font-semibold text-gray-800 mb-4">Order Details</h2>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Company Name *</label>
             <input
               name="customer_name"
               required
@@ -127,7 +128,7 @@ export default function ImportReviewForm({ importedOrder, customers }: Props) {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Customer Email</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Company Email</label>
             <input
               name="customer_email"
               type="email"
@@ -136,7 +137,17 @@ export default function ImportReviewForm({ importedOrder, customers }: Props) {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Customer Phone</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Contact Name</label>
+            <input
+              name="contact_name"
+              value={contactName}
+              onChange={e => setContactName(e.target.value)}
+              placeholder="Optional person name"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Company Phone</label>
             <input
               name="customer_phone"
               defaultValue={importedOrder.customer_phone ?? ''}
@@ -144,13 +155,13 @@ export default function ImportReviewForm({ importedOrder, customers }: Props) {
             />
           </div>
           <div className="col-span-2 rounded-lg border border-amber-200 bg-amber-50 p-4">
-            <label className="block text-sm font-medium text-amber-900 mb-1">Existing Customer Match</label>
+            <label className="block text-sm font-medium text-amber-900 mb-1">Existing Company Match</label>
             <select
               value={selectedCustomerId}
               onChange={e => setSelectedCustomerId(e.target.value)}
               className="w-full border border-amber-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-400"
             >
-              <option value="">Create or auto-match from the typed customer details</option>
+              <option value="">Create or auto-match from the typed company details</option>
               {customers.map(customer => (
                 <option key={customer.id} value={customer.id}>
                   {customer.name}
@@ -159,7 +170,7 @@ export default function ImportReviewForm({ importedOrder, customers }: Props) {
               ))}
             </select>
             <p className="mt-2 text-xs text-amber-800">
-              Use this when the import should attach to an existing customer even if the typed details vary slightly.
+              Use this when the import should attach to an existing company even if the typed details vary slightly.
             </p>
           </div>
           <div>
@@ -195,7 +206,7 @@ export default function ImportReviewForm({ importedOrder, customers }: Props) {
             />
           </div>
           <div className="col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Customer Notes</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Company Notes</label>
             <textarea
               name="customer_notes"
               rows={2}

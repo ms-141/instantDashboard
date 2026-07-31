@@ -45,7 +45,7 @@ export default async function OrdersPage({
 
   let query = supabase
     .from('orders')
-    .select('*, customer:customers(name), logos:order_logos(price), garments:order_garments(price, quantity)')
+    .select('*, customer:customers(name, contact_name), logos:order_logos(price), garments:order_garments(price, quantity)')
     .order('due_date', { ascending: true })
 
   if (params.status && ALL_STATUSES.includes(params.status as OrderStatus)) {
@@ -56,9 +56,9 @@ export default async function OrdersPage({
 
   const filtered = params.q
     ? (orders ?? []).filter(o =>
-        o.customer?.name?.toLowerCase().includes(params.q!.toLowerCase()) ||
-        o.order_number?.toLowerCase().includes(params.q!.toLowerCase())
-      )
+      o.customer?.name?.toLowerCase().includes(params.q!.toLowerCase()) ||
+      o.order_number?.toLowerCase().includes(params.q!.toLowerCase())
+    )
     : (orders ?? [])
 
   return (
@@ -76,7 +76,7 @@ export default async function OrdersPage({
           type="search"
           name="q"
           defaultValue={params.q}
-          placeholder="Search customer or order #…"
+          placeholder="Search company or order #…"
           className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 min-w-52"
         />
         <select
@@ -106,7 +106,7 @@ export default async function OrdersPage({
               <thead>
                 <tr className="text-left text-gray-400 text-xs uppercase tracking-wide">
                   <th className="px-6 py-3 font-medium">Order #</th>
-                  <th className="px-6 py-3 font-medium">Customer</th>
+                  <th className="px-6 py-3 font-medium">Company</th>
                   <th className="px-6 py-3 font-medium">Status</th>
                   <th className="px-6 py-3 font-medium">Due Date</th>
                   <th className="px-6 py-3 font-medium">Total</th>
@@ -121,7 +121,10 @@ export default async function OrdersPage({
                         {order.order_number || order.id.slice(0, 8)}
                       </Link>
                     </td>
-                    <td className="px-6 py-3 text-gray-700">{order.customer?.name}</td>
+                    <td className="px-6 py-3 text-gray-700">
+                      <div className="font-medium">{order.customer?.name}</div>
+                      {order.customer?.contact_name && <div className="text-xs text-gray-400">{order.customer.contact_name}</div>}
+                    </td>
                     <td className="px-6 py-3"><StatusBadge status={order.status} /></td>
                     <td className="px-6 py-3 text-gray-600">{formatDate(order.due_date)}</td>
                     <td className="px-6 py-3 font-medium text-emerald-700">{formatCurrency(getOrderTotal(order))}</td>

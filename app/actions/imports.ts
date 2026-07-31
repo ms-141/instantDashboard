@@ -115,6 +115,7 @@ function parseGarments(value: string | null): ImportGarment[] {
 async function ensureCustomerId(params: {
   customerId: string | null
   name: string
+  contactName: string | null
   email: string | null
   phone: string | null
   notes: string | null
@@ -149,6 +150,7 @@ async function ensureCustomerId(params: {
     .from('customers')
     .insert({
       name: params.name,
+      contact_name: params.contactName,
       email: params.email,
       phone: params.phone,
       notes: params.notes,
@@ -185,6 +187,7 @@ export async function submitImportReview(importId: string, formData: FormData) {
   }
 
   const customerEmail = asText(formData.get('customer_email'))
+  const contactName = asText(formData.get('contact_name'))
   const customerPhone = asText(formData.get('customer_phone'))
   const customerNotes = asText(formData.get('customer_notes'))
   const selectedCustomerId = asText(formData.get('existing_customer_id'))
@@ -204,6 +207,7 @@ export async function submitImportReview(importId: string, formData: FormData) {
     .from('imported_orders')
     .update({
       customer_name: customerName,
+      contact_name: contactName,
       customer_email: customerEmail,
       customer_phone: customerPhone,
       customer_notes: customerNotes,
@@ -232,6 +236,7 @@ export async function submitImportReview(importId: string, formData: FormData) {
   const customerId = await ensureCustomerId({
     customerId: selectedCustomerId,
     name: customerName,
+    contactName,
     email: customerEmail,
     phone: customerPhone,
     notes: customerNotes,

@@ -7,6 +7,7 @@ create extension if not exists pgcrypto;
 create table if not exists public.customers (
   id uuid primary key default gen_random_uuid(),
   name text not null,
+  contact_name text,
   email text,
   phone text,
   notes text,
@@ -14,6 +15,7 @@ create table if not exists public.customers (
 );
 
 alter table public.customers add column if not exists name text;
+alter table public.customers add column if not exists contact_name text;
 alter table public.customers add column if not exists email text;
 alter table public.customers add column if not exists phone text;
 alter table public.customers add column if not exists notes text;
@@ -35,6 +37,8 @@ create table if not exists public.orders (
   status text not null default 'new',
   due_date date not null,
   notes text,
+  intake_form_image_path text,
+  intake_form_image_url text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -44,6 +48,8 @@ alter table public.orders add column if not exists order_number text;
 alter table public.orders add column if not exists status text;
 alter table public.orders add column if not exists due_date date;
 alter table public.orders add column if not exists notes text;
+alter table public.orders add column if not exists intake_form_image_path text;
+alter table public.orders add column if not exists intake_form_image_url text;
 alter table public.orders add column if not exists created_at timestamptz not null default now();
 alter table public.orders add column if not exists updated_at timestamptz not null default now();
 
@@ -189,6 +195,7 @@ create table if not exists public.imported_orders (
   source_identifier text,
   review_status text not null default 'pending',
   customer_name text not null,
+  contact_name text,
   customer_email text,
   customer_phone text,
   customer_notes text,
@@ -209,6 +216,7 @@ alter table public.imported_orders add column if not exists source text;
 alter table public.imported_orders add column if not exists source_identifier text;
 alter table public.imported_orders add column if not exists review_status text;
 alter table public.imported_orders add column if not exists customer_name text;
+alter table public.imported_orders add column if not exists contact_name text;
 alter table public.imported_orders add column if not exists customer_email text;
 alter table public.imported_orders add column if not exists customer_phone text;
 alter table public.imported_orders add column if not exists customer_notes text;
