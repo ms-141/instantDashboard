@@ -35,12 +35,15 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   if (!order) notFound()
 
   const deleteThisOrder = deleteOrder.bind(null, id)
-  const logoTotal = (order.logos ?? []).reduce((sum: number, logo: OrderLogo) => sum + (logo.price ?? 0), 0)
+  const logoTotal = (order.logos ?? []).reduce(
+    (sum: number, logo: OrderLogo) => sum + (logo.price ?? 0) * (logo.quantity ?? 1),
+    0
+  )
   const garmentTotal = (order.garments ?? []).reduce(
     (sum: number, garment: OrderGarment) => sum + (garment.price ?? 0) * garment.quantity,
     0
   )
-  const orderTotal = logoTotal + garmentTotal
+  const orderTotal = order.order_total_override ?? (logoTotal + garmentTotal)
 
   return (
     <div className="max-w-3xl">
@@ -110,6 +113,17 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         </div>
       )}
 
+      {order.receipt_image_url && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-6 p-6">
+          <h2 className="font-semibold text-gray-800 mb-4">Receipt</h2>
+          <ClickableImage
+            src={order.receipt_image_url}
+            alt="Receipt"
+            thumbnailClassName="max-h-[32rem] rounded-lg border border-gray-200 object-contain bg-gray-50 hover:opacity-90 transition-opacity"
+          />
+        </div>
+      )}
+
       {/* Logos */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-6">
         <div className="px-6 py-4 border-b border-gray-100">
@@ -146,7 +160,11 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                   <p className="font-medium text-gray-800">{logo.name || 'Untitled Logo'}</p>
                   <p className="text-sm text-gray-500">{logo.placement}</p>
                   {logo.price !== null && logo.price !== undefined && (
-                    <p className="text-sm text-emerald-700 mt-1">{formatCurrency(logo.price)}</p>
+                    <p className="text-sm text-emerald-700 mt-1">
+                      {logo.quantity > 1
+                        ? `${logo.quantity} × ${formatCurrency(logo.price)} = ${formatCurrency(logo.price * logo.quantity)}`
+                        : formatCurrency(logo.price)}
+                    </p>
                   )}
                   {logo.notes && <p className="text-sm text-gray-400 mt-1">{logo.notes}</p>}
                 </div>

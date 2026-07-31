@@ -20,6 +20,7 @@ export interface OrderLogo {
   image_url: string | null
   extra_image_urls: string[] | null
   extra_image_paths: string[] | null
+  quantity: number
   price: number | null
   width_inches: number
   height_inches: number
@@ -48,6 +49,9 @@ export interface Order {
   notes: string | null
   intake_form_image_path: string | null
   intake_form_image_url: string | null
+  order_total_override: number | null
+  receipt_image_path: string | null
+  receipt_image_url: string | null
   created_at: string
   updated_at: string
   customer?: Customer

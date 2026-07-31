@@ -73,3 +73,23 @@ export async function uploadOrderIntakeFormImage(file: File) {
         intake_form_image_url: data.publicUrl,
     }
 }
+
+export async function uploadReceiptImage(file: File) {
+    const supabase = createClient()
+    const objectPath = `orders/receipts/${crypto.randomUUID()}-${sanitizeFilename(file.name)}`
+
+    const { error } = await supabase.storage.from(BUCKET).upload(objectPath, file, {
+        cacheControl: '3600',
+        contentType: file.type,
+        upsert: false,
+    })
+
+    if (error) throw new Error(error.message)
+
+    const { data } = supabase.storage.from(BUCKET).getPublicUrl(objectPath)
+
+    return {
+        receipt_image_path: objectPath,
+        receipt_image_url: data.publicUrl,
+    }
+}

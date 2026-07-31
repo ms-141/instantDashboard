@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import type { Customer, Order, OrderGarment, OrderLogo } from '@/types'
 import GarmentSizesEditor from '@/components/GarmentSizesEditor'
-import { uploadLogoImage, uploadOrderIntakeFormImage } from '@/utils/supabase/logoUploads'
+import { uploadLogoImage, uploadOrderIntakeFormImage, uploadReceiptImage } from '@/utils/supabase/logoUploads'
 import {
   createEmptyGarmentSizes,
   parseGarmentSizes,
@@ -31,6 +31,7 @@ const emptyLogo = (): LogoField => ({
   image_url: null,
   extra_image_urls: [],
   extra_image_paths: [],
+  quantity: 1,
   price: null,
   width_inches: 0,
   height_inches: 0,
@@ -63,9 +64,11 @@ export default function OrderForm({ customers, action, order }: Props) {
   const [customerNotes, setCustomerNotes] = useState('')
   const [intakeFormImagePath, setIntakeFormImagePath] = useState(() => order?.intake_form_image_path ?? '')
   const [intakeFormImageUrl, setIntakeFormImageUrl] = useState(() => order?.intake_form_image_url ?? '')
+  const [receiptImagePath, setReceiptImagePath] = useState(() => order?.receipt_image_path ?? '')
+  const [receiptImageUrl, setReceiptImageUrl] = useState(() => order?.receipt_image_url ?? '')
   const [logos, setLogos] = useState<LogoField[]>(
-    order?.logos?.map(({ name, image_path, image_url, extra_image_urls, extra_image_paths, price, width_inches, height_inches, placement, notes }) =>
-      ({ name, image_path, image_url, extra_image_urls: extra_image_urls ?? [], extra_image_paths: extra_image_paths ?? [], price, width_inches, height_inches, placement, notes })) ?? [emptyLogo()]
+    order?.logos?.map(({ name, image_path, image_url, extra_image_urls, extra_image_paths, quantity, price, width_inches, height_inches, placement, notes }) =>
+      ({ name, image_path, image_url, extra_image_urls: extra_image_urls ?? [], extra_image_paths: extra_image_paths ?? [], quantity: quantity ?? 1, price, width_inches, height_inches, placement, notes })) ?? [emptyLogo()]
   )
   const [garments, setGarments] = useState<GarmentField[]>(
     order?.garments?.map(({ garment_type, quantity, price, color, sizes, supplied_by, notes }) =>
@@ -73,6 +76,7 @@ export default function OrderForm({ customers, action, order }: Props) {
   )
   const [uploadingLogoIndex, setUploadingLogoIndex] = useState<number | null>(null)
   const [uploadingIntakeForm, setUploadingIntakeForm] = useState(false)
+  const [uploadingReceipt, setUploadingReceipt] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
 
   const updateLogo = (i: number, field: keyof LogoField, value: unknown) =>
@@ -127,18 +131,31 @@ export default function OrderForm({ customers, action, order }: Props) {
 
   const onIntakeFormImageChange = async (file: File | null) => {
     if (!file) return
-
     setUploadError(null)
     setUploadingIntakeForm(true)
-
     try {
       const uploaded = await uploadOrderIntakeFormImage(file)
       setIntakeFormImagePath(uploaded.intake_form_image_path)
       setIntakeFormImageUrl(uploaded.intake_form_image_url)
     } catch (error) {
-      setUploadError(error instanceof Error ? error.message : 'Failed to upload image.')
+      setUploadError(error instanceof Error ? error.message : 'Failed to upload.')
     } finally {
       setUploadingIntakeForm(false)
+    }
+  }
+
+  const onReceiptImageChange = async (file: File | null) => {
+    if (!file) return
+    setUploadError(null)
+    setUploadingReceipt(true)
+    try {
+      const uploaded = await uploadReceiptImage(file)
+      setReceiptImagePath(uploaded.receipt_image_path)
+      setReceiptImageUrl(uploaded.receipt_image_url)
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : 'Failed to upload receipt.')
+    } finally {
+      setUploadingReceipt(false)
     }
   }
 
@@ -160,6 +177,8 @@ export default function OrderForm({ customers, action, order }: Props) {
       <input type="hidden" name="contact_name" value={contactName} />
       <input type="hidden" name="intake_form_image_path" value={intakeFormImagePath} />
       <input type="hidden" name="intake_form_image_url" value={intakeFormImageUrl} />
+      <input type="hidden" name="receipt_image_path" value={receiptImagePath} />
+      <input type="hidden" name="receipt_image_url" value={receiptImageUrl} />
       <input type="hidden" name="logos" value={JSON.stringify(logos)} />
       <input
         type="hidden"
@@ -309,6 +328,39 @@ export default function OrderForm({ customers, action, order }: Props) {
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Total Override</label>
+            <input
+              type="number"
+              name="order_total_override"
+              step="0.01"
+              min="0"
+              defaultValue={order?.order_total_override ?? ''}
+              placeholder="e.g. 126.00"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            <p className="mt-1 text-xs text-gray-400">Set this if you only have the receipt total — it replaces the calculated total everywhere.</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Receipt Image</label>
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/heic,image/heif,application/pdf"
+              onChange={e => onReceiptImageChange(e.target.files?.[0] ?? null)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            {uploadingReceipt && <p className="mt-1 text-xs text-gray-400">Uploading...</p>}
+            {receiptImageUrl && (
+              <div className="mt-2 flex items-center gap-2">
+                {receiptImageUrl.toLowerCase().includes('.pdf') || receiptImageUrl.toLowerCase().includes('.heic') ? (
+                  <p className="text-xs text-gray-500">File uploaded</p>
+                ) : (
+                  <img src={receiptImageUrl} alt="Receipt preview" className="h-16 rounded border border-gray-200 object-contain" />
+                )}
+                <button type="button" onClick={() => { setReceiptImagePath(''); setReceiptImageUrl('') }} className="text-xs text-red-500 hover:text-red-700">Remove</button>
+              </div>
+            )}
+          </div>
           <div className="col-span-2 rounded-lg border border-slate-200 bg-slate-50 p-4">
             <div className="flex items-center justify-between gap-3 mb-3">
               <div>
@@ -395,7 +447,7 @@ export default function OrderForm({ customers, action, order }: Props) {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Price</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Price (per logo)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -403,6 +455,16 @@ export default function OrderForm({ customers, action, order }: Props) {
                   value={logo.price ?? ''}
                   onChange={e => updateLogo(i, 'price', e.target.value ? parseFloat(e.target.value) : null)}
                   placeholder="e.g. 25.00"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Quantity</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={logo.quantity}
+                  onChange={e => updateLogo(i, 'quantity', Math.max(1, parseInt(e.target.value) || 1))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
@@ -607,7 +669,7 @@ export default function OrderForm({ customers, action, order }: Props) {
       <div className="flex gap-3">
         <button
           type="submit"
-          disabled={uploadingLogoIndex !== null || uploadingIntakeForm}
+          disabled={uploadingLogoIndex !== null || uploadingIntakeForm || uploadingReceipt}
           className="bg-indigo-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
         >
           {order ? 'Update Order' : 'Create Order'}

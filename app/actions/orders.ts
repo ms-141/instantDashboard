@@ -73,6 +73,9 @@ export async function createOrder(formData: FormData) {
     notes: string | null
     intake_form_image_path: string | null
     intake_form_image_url: string | null
+    order_total_override: number | null
+    receipt_image_path: string | null
+    receipt_image_url: string | null
   } = {
     customer_id: customerId,
     status: formData.get('status') as string,
@@ -80,6 +83,9 @@ export async function createOrder(formData: FormData) {
     notes: (formData.get('notes') as string) || null,
     intake_form_image_path: asText(formData.get('intake_form_image_path')),
     intake_form_image_url: asText(formData.get('intake_form_image_url')),
+    order_total_override: formData.get('order_total_override') ? parseFloat(formData.get('order_total_override') as string) : null,
+    receipt_image_path: asText(formData.get('receipt_image_path')),
+    receipt_image_url: asText(formData.get('receipt_image_url')),
   }
 
   if (orderNumber) {
@@ -125,6 +131,9 @@ export async function updateOrder(orderId: string, formData: FormData) {
     notes: string | null
     intake_form_image_path: string | null
     intake_form_image_url: string | null
+    order_total_override: number | null
+    receipt_image_path: string | null
+    receipt_image_url: string | null
   } = {
     customer_id: formData.get('customer_id') as string,
     status: formData.get('status') as string,
@@ -132,6 +141,9 @@ export async function updateOrder(orderId: string, formData: FormData) {
     notes: (formData.get('notes') as string) || null,
     intake_form_image_path: asText(formData.get('intake_form_image_path')),
     intake_form_image_url: asText(formData.get('intake_form_image_url')),
+    order_total_override: formData.get('order_total_override') ? parseFloat(formData.get('order_total_override') as string) : null,
+    receipt_image_path: asText(formData.get('receipt_image_path')),
+    receipt_image_url: asText(formData.get('receipt_image_url')),
   }
 
   if (orderNumber) {

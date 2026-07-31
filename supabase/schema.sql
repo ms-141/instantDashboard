@@ -56,8 +56,13 @@ update storage.buckets
 set allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'application/pdf']
 where id = 'logo-images';
 
+alter table public.order_logos add column if not exists quantity integer not null default 1;
+
 alter table public.orders add column if not exists intake_form_image_path text;
 alter table public.orders add column if not exists intake_form_image_url text;
+alter table public.orders add column if not exists order_total_override numeric;
+alter table public.orders add column if not exists receipt_image_path text;
+alter table public.orders add column if not exists receipt_image_url text;
 alter table public.orders add column if not exists created_at timestamptz not null default now();
 alter table public.orders add column if not exists updated_at timestamptz not null default now();
 
