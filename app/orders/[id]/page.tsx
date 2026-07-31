@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation'
 import { deleteOrder } from '@/app/actions/orders'
 import DeleteButton from '@/components/DeleteButton'
 import type { OrderLogo, OrderGarment } from '@/types'
+import { formatGarmentSizes } from '@/utils/garmentSizes'
 
 function formatDate(d: string) {
   return new Date(d + 'T00:00:00').toLocaleDateString('en-US', {
@@ -179,7 +180,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                     <td className="px-6 py-3 text-gray-600">{g.price !== null ? formatCurrency(g.price) : '—'}</td>
                     <td className="px-6 py-3 text-emerald-700 font-medium">{formatCurrency((g.price ?? 0) * g.quantity)}</td>
                     <td className="px-6 py-3 text-gray-600">{g.color || '—'}</td>
-                    <td className="px-6 py-3 text-gray-600">{g.sizes || '—'}</td>
+                    <td className="px-6 py-3 text-gray-600">{formatGarmentSizes(g.sizes)}</td>
                     <td className="px-6 py-3">
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${g.supplied_by === 'us'
                         ? 'bg-indigo-50 text-indigo-700'

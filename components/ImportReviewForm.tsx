@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { submitImportReview } from '@/app/actions/imports'
 import type { Customer, ImportedOrder, ImportedGarment, ImportedLogo } from '@/types'
 import { uploadLogoImage } from '@/utils/supabase/logoUploads'
+import GarmentSizesEditor from '@/components/GarmentSizesEditor'
+import { createEmptyGarmentSizes, parseGarmentSizes, serializeGarmentSizes, type GarmentSizeRow } from '@/utils/garmentSizes'
 
 const PLACEMENTS = [
   'Left Chest', 'Right Chest', 'Center Chest', 'Back', 'Upper Back',
@@ -43,16 +45,23 @@ const emptyGarment = (): ImportedGarment => ({
   quantity: 1,
   price: null,
   color: null,
-  sizes: null,
+  sizes: '',
   supplied_by: 'customer',
   notes: null,
 })
 
+type GarmentField = Omit<ImportedGarment, 'sizes'> & {
+  sizes: GarmentSizeRow[]
+}
+
 export default function ImportReviewForm({ importedOrder, customers }: Props) {
   const submitReview = submitImportReview.bind(null, importedOrder.id)
   const [logos, setLogos] = useState<ImportedLogo[]>(importedOrder.logos ?? [emptyLogo()])
-  const [garments, setGarments] = useState<ImportedGarment[]>(
-    importedOrder.garments ?? [emptyGarment()]
+  const [garments, setGarments] = useState<GarmentField[]>(
+    (importedOrder.garments ?? [emptyGarment()]).map(garment => ({
+      ...garment,
+      sizes: parseGarmentSizes(garment.sizes),
+    }))
   )
   const [selectedCustomerId, setSelectedCustomerId] = useState(() => {
     const customerEmail = importedOrder.customer_email?.trim().toLowerCase()
@@ -99,7 +108,14 @@ export default function ImportReviewForm({ importedOrder, customers }: Props) {
     <form action={submitReview} className="space-y-6 max-w-3xl">
       <input type="hidden" name="existing_customer_id" value={selectedCustomerId} />
       <input type="hidden" name="logos_json" value={JSON.stringify(logos)} />
-      <input type="hidden" name="garments_json" value={JSON.stringify(garments)} />
+      <input
+        type="hidden"
+        name="garments_json"
+        value={JSON.stringify(garments.map(garment => ({
+          ...garment,
+          sizes: serializeGarmentSizes(garment.sizes),
+        })))}
+      />
       {uploadError && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
           {uploadError}
@@ -391,8 +407,9 @@ export default function ImportReviewForm({ importedOrder, customers }: Props) {
                 <input
                   type="number"
                   min="1"
-                  value={garment.quantity}
-                  onChange={e => updateGarment(i, 'quantity', parseInt(e.target.value, 10) || 1)}
+                  required
+                  value={garment.quantity || ''}
+                  onChange={e => updateGarment(i, 'quantity', e.target.value ? parseInt(e.target.value, 10) : 0)}
                   className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
@@ -420,12 +437,9 @@ export default function ImportReviewForm({ importedOrder, customers }: Props) {
               </div>
               <div className="col-span-2">
                 <label className="block text-xs font-medium text-gray-600 mb-1">Sizes</label>
-                <input
-                  type="text"
-                  value={garment.sizes ?? ''}
-                  onChange={e => updateGarment(i, 'sizes', e.target.value || null)}
-                  placeholder="e.g. Sx2, Mx4, Lx3, XLx1"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                <GarmentSizesEditor
+                  value={garment.sizes}
+                  onChange={nextSizes => updateGarment(i, 'sizes', nextSizes)}
                 />
               </div>
               <div className="col-span-2">
