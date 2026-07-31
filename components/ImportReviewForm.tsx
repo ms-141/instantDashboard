@@ -54,14 +54,20 @@ type GarmentField = Omit<ImportedGarment, 'sizes'> & {
   sizes: GarmentSizeRow[]
 }
 
+function normalizeGarment(garment: ImportedGarment): GarmentField {
+  return {
+    ...garment,
+    sizes: parseGarmentSizes(garment.sizes),
+  }
+}
+
 export default function ImportReviewForm({ importedOrder, customers }: Props) {
   const submitReview = submitImportReview.bind(null, importedOrder.id)
   const [logos, setLogos] = useState<ImportedLogo[]>(importedOrder.logos ?? [emptyLogo()])
   const [garments, setGarments] = useState<GarmentField[]>(
-    (importedOrder.garments ?? [emptyGarment()]).map(garment => ({
-      ...garment,
-      sizes: parseGarmentSizes(garment.sizes),
-    }))
+    importedOrder.garments?.length
+      ? importedOrder.garments.map(normalizeGarment)
+      : [emptyGarment()]
   )
   const [selectedCustomerId, setSelectedCustomerId] = useState(() => {
     const customerEmail = importedOrder.customer_email?.trim().toLowerCase()
