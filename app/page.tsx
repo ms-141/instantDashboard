@@ -3,6 +3,8 @@ import Link from 'next/link'
 import StatusBadge from '@/components/StatusBadge'
 import DeleteButton from '@/components/DeleteButton'
 import { deleteOrder } from '@/app/actions/orders'
+import PeriodPicker from '@/components/PeriodPicker'
+import { Suspense } from 'react'
 
 function formatDate(dateStr: string) {
   return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
@@ -41,7 +43,40 @@ function getOrderTotal(order: {
   return logoTotal + garmentTotal
 }
 
-export default async function DashboardPage() {
+function getPeriodRange(period: string, today: Date): { start: Date; end: Date; label: string } {
+  const y = today.getFullYear()
+  const m = today.getMonth()
+  switch (period) {
+    case 'last_month': {
+      const start = new Date(y, m - 1, 1)
+      const end = new Date(y, m, 1)
+      return { start, end, label: 'Last Month' }
+    }
+    case 'quarter': {
+      const q = Math.floor(m / 3)
+      const start = new Date(y, q * 3, 1)
+      const end = new Date(y, q * 3 + 3, 1)
+      return { start, end, label: 'This Quarter' }
+    }
+    case 'year':
+      return { start: new Date(y, 0, 1), end: new Date(y + 1, 0, 1), label: 'This Year' }
+    case 'last_year':
+      return { start: new Date(y - 1, 0, 1), end: new Date(y, 0, 1), label: 'Last Year' }
+    case 'all':
+      return { start: new Date(0), end: new Date(253402300800000), label: 'All Time' }
+    case 'month':
+    default:
+      return { start: new Date(y, m, 1), end: new Date(y, m + 1, 1), label: 'This Month' }
+  }
+}
+
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ period?: string }>
+}) {
+  const { period = 'month' } = await searchParams
+  const { period = 'month' } = await searchParams
   const supabase = await createClient()
   const { data: allOrders } = await supabase
     .from('orders')
@@ -57,22 +92,25 @@ export default async function DashboardPage() {
     const diff = Math.floor((new Date(o.due_date + 'T00:00:00').getTime() - today.getTime()) / 86400000)
     return diff >= 0 && diff <= 7
   })
-  const completedThisMonth = orders.filter(o => {
+
+  const { start: periodStart, end: periodEnd, label: periodLabel } = getPeriodRange(period, today)
+
+  const completedInPeriod = orders.filter(o => {
     if (o.status !== 'completed' && o.status !== 'delivered') return false
     const u = new Date(o.updated_at)
-    return u.getMonth() === today.getMonth() && u.getFullYear() === today.getFullYear()
+    return u >= periodStart && u < periodEnd
   })
 
   const activeValue = active.reduce((sum, order) => sum + getOrderTotal(order), 0)
-  const completedThisMonthValue = completedThisMonth.reduce((sum, order) => sum + getOrderTotal(order), 0)
+  const completedInPeriodValue = completedInPeriod.reduce((sum, order) => sum + getOrderTotal(order), 0)
 
   const stats = [
     { label: 'Active Orders', value: active.length, cls: 'bg-indigo-50 text-indigo-700 border-indigo-100' },
     { label: 'Overdue', value: overdue.length, cls: overdue.length > 0 ? 'bg-red-50 text-red-700 border-red-100' : 'bg-gray-50 text-gray-600 border-gray-100' },
     { label: 'Due This Week', value: dueThisWeek.length, cls: dueThisWeek.length > 0 ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-gray-50 text-gray-600 border-gray-100' },
-    { label: 'Completed This Month', value: completedThisMonth.length, cls: 'bg-green-50 text-green-700 border-green-100' },
+    { label: `Completed (${periodLabel})`, value: completedInPeriod.length, cls: 'bg-green-50 text-green-700 border-green-100' },
     { label: 'Active Value', value: formatCurrency(activeValue), cls: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
-    { label: 'Completed Value (Month)', value: formatCurrency(completedThisMonthValue), cls: 'bg-teal-50 text-teal-700 border-teal-100' },
+    { label: `Revenue (${periodLabel})`, value: formatCurrency(completedInPeriodValue), cls: 'bg-teal-50 text-teal-700 border-teal-100' },
   ]
 
   return (
@@ -85,6 +123,10 @@ export default async function DashboardPage() {
         >
           + New Order
         </Link>
+      </div>
+
+      <div className="mb-4">
+        <Suspense><PeriodPicker /></Suspense>
       </div>
 
       <div className="grid grid-cols-2 gap-4 mb-8 sm:grid-cols-3">
