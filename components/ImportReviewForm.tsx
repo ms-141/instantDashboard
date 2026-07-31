@@ -40,12 +40,12 @@ const emptyLogo = (): ImportedLogo => ({
   notes: null,
 })
 
-const emptyGarment = (): ImportedGarment => ({
+const emptyGarment = (): GarmentField => ({
   garment_type: 'Polo',
   quantity: 1,
   price: null,
   color: null,
-  sizes: '',
+  sizes: createEmptyGarmentSizes(),
   supplied_by: 'customer',
   notes: null,
 })
@@ -83,7 +83,7 @@ export default function ImportReviewForm({ importedOrder, customers }: Props) {
   const updateLogo = (i: number, field: keyof ImportedLogo, value: unknown) =>
     setLogos(prev => prev.map((logo, idx) => (idx === i ? { ...logo, [field]: value } : logo)))
 
-  const updateGarment = (i: number, field: keyof ImportedGarment, value: unknown) =>
+  const updateGarment = (i: number, field: keyof GarmentField, value: unknown) =>
     setGarments(prev =>
       prev.map((garment, idx) => (idx === i ? { ...garment, [field]: value } : garment))
     )
