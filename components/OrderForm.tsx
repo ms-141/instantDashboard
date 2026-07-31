@@ -300,18 +300,30 @@ export default function OrderForm({ customers, action, order }: Props) {
             </div>
             <input
               type="file"
-              accept="image/png,image/jpeg,image/webp"
+              accept="image/png,image/jpeg,image/webp,image/heic,image/heif,application/pdf"
               onChange={e => onIntakeFormImageChange(e.target.files?.[0] ?? null)}
               className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
-            {uploadingIntakeForm && <p className="mt-2 text-xs text-slate-500">Uploading image...</p>}
-            {intakeFormImageUrl && (
-              <img
-                src={intakeFormImageUrl}
-                alt="Order intake form preview"
-                className="mt-3 max-h-56 rounded-lg border border-slate-200 object-contain bg-white"
-              />
-            )}
+            {uploadingIntakeForm && <p className="mt-2 text-xs text-slate-500">Uploading...</p>}
+            {intakeFormImageUrl && (() => {
+              const u = intakeFormImageUrl.toLowerCase()
+              const nonRenderable = u.includes('.pdf') || u.includes('.heic') || u.includes('.heif')
+              const label = u.includes('.pdf') ? 'PDF uploaded' : 'HEIC image uploaded (preview not available in browser)'
+              return nonRenderable ? (
+                <div className="mt-3 flex items-center gap-2 p-3 bg-gray-50 border border-slate-200 rounded-lg">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-500 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6H6zm7 1.5L18.5 9H13V3.5zM8.5 13h1.75c.97 0 1.75.78 1.75 1.75S11.22 16.5 10.25 16.5H9.5V18H8.5v-5zm1 2.5h.75c.41 0 .75-.34.75-.75s-.34-.75-.75-.75H9.5v1.5zm3.5-2.5h1.5c1.1 0 2 .9 2 2v1c0 1.1-.9 2-2 2H13v-5zm1 4h.5c.55 0 1-.45 1-1v-1c0-.55-.45-1-1-1H14v3zm3.5-4h3v1h-2v1h1.5v1H18.5v2h-1v-5z" />
+                  </svg>
+                  <p className="text-sm text-gray-600">{label}</p>
+                </div>
+              ) : (
+                <img
+                  src={intakeFormImageUrl}
+                  alt="Order intake form preview"
+                  className="mt-3 max-h-56 rounded-lg border border-slate-200 object-contain bg-white"
+                />
+              )
+            })()}
           </div>
         </div>
       </section>
