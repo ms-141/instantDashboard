@@ -96,8 +96,9 @@ export default async function DashboardPage({
 
   const completedInPeriod = orders.filter(o => {
     if (o.status !== 'completed' && o.status !== 'delivered') return false
-    const u = new Date(o.updated_at)
-    return u >= periodStart && u < periodEnd
+    // use due_date — updated_at changes on every edit and is unreliable as a completion date
+    const d = new Date(o.due_date + 'T00:00:00')
+    return d >= periodStart && d < periodEnd
   })
 
   const activeValue = active.reduce((sum, order) => sum + getOrderTotal(order), 0)
