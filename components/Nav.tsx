@@ -10,12 +10,16 @@ const links = [
   { href: '/orders', label: '📋 Orders' },
   { href: '/imports', label: '📥 Imported' },
   { href: '/customers', label: '👥 Companies' },
+  { href: '/email-templates', label: '✉️ Templates' },
+  { href: '/automations', label: '⚡ Automations' },
 ]
 
 function getMobileTitle(pathname: string) {
   if (pathname.startsWith('/orders')) return 'Orders'
   if (pathname.startsWith('/imports')) return 'Imported Orders'
   if (pathname.startsWith('/customers')) return 'Companies'
+  if (pathname.startsWith('/email-templates')) return 'Email Templates'
+  if (pathname.startsWith('/automations')) return 'Automations'
   return 'Dashboard'
 }
 

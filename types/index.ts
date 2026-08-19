@@ -1,6 +1,14 @@
 export type OrderStatus = 'new' | 'in_progress' | 'completed' | 'delivered' | 'cancelled'
 export type SuppliedBy = 'us' | 'customer'
 export type ImportReviewStatus = 'pending' | 'approved' | 'rejected'
+export type EmailStatus = 'queued' | 'sent' | 'failed'
+export type ActivityEventType =
+  | 'order_created'
+  | 'order_status_changed'
+  | 'email_sent'
+  | 'email_opened'
+  | 'email_clicked'
+  | 'note_added'
 
 export interface Customer {
   id: string
@@ -101,4 +109,71 @@ export interface ImportedGarment {
   sizes: string | null
   supplied_by: SuppliedBy
   notes: string | null
+}
+
+export interface EmailTemplate {
+  id: string
+  name: string
+  subject: string
+  body_html: string
+  created_at: string
+  updated_at: string
+}
+
+export interface EmailAutomation {
+  id: string
+  name: string
+  trigger_status: OrderStatus
+  template_id: string
+  enabled: boolean
+  created_at: string
+  template?: EmailTemplate
+}
+
+export interface EmailMessage {
+  id: string
+  tracking_id: string
+  customer_id: string
+  order_id: string | null
+  template_id: string | null
+  automation_id: string | null
+  to_email: string
+  from_email: string
+  subject: string
+  body_html: string
+  status: EmailStatus
+  provider_message_id: string | null
+  error_message: string | null
+  open_count: number
+  first_opened_at: string | null
+  last_opened_at: string | null
+  click_count: number
+  first_clicked_at: string | null
+  last_clicked_at: string | null
+  sent_at: string | null
+  created_at: string
+  customer?: Customer
+  order?: Order
+}
+
+export interface EmailEvent {
+  id: string
+  email_message_id: string
+  event_type: 'open' | 'click'
+  url: string | null
+  user_agent: string | null
+  ip: string | null
+  created_at: string
+}
+
+export interface ActivityEvent {
+  id: string
+  customer_id: string
+  order_id: string | null
+  email_message_id: string | null
+  type: ActivityEventType
+  title: string
+  description: string | null
+  metadata: Record<string, unknown>
+  created_at: string
 }

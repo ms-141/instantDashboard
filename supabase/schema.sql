@@ -314,12 +314,131 @@ create trigger orders_updated_at
 before update on public.orders
 for each row execute function public.update_updated_at();
 
+-- CRM: reusable email templates with {{merge_field}} support
+create table if not exists public.email_templates (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  subject text not null,
+  body_html text not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+drop trigger if exists email_templates_updated_at on public.email_templates;
+
+create trigger email_templates_updated_at
+before update on public.email_templates
+for each row execute function public.update_updated_at();
+
+-- CRM: automation rules — when an order's status changes to trigger_status,
+-- automatically send the linked template to the customer.
+create table if not exists public.email_automations (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  trigger_status text not null,
+  template_id uuid not null references public.email_templates(id) on delete cascade,
+  enabled boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'email_automations_trigger_status_check'
+      and conrelid = 'public.email_automations'::regclass
+  ) then
+    alter table public.email_automations
+      add constraint email_automations_trigger_status_check
+      check (trigger_status in ('new','in_progress','completed','delivered','cancelled'));
+  end if;
+end
+$$;
+
+create index if not exists email_automations_trigger_status_idx
+  on public.email_automations(trigger_status) where enabled;
+
+-- CRM: outbound emails sent to customers, with open/click tracking aggregates
+create table if not exists public.email_messages (
+  id uuid primary key default gen_random_uuid(),
+  tracking_id uuid not null default gen_random_uuid(),
+  customer_id uuid not null references public.customers(id) on delete cascade,
+  order_id uuid references public.orders(id) on delete set null,
+  template_id uuid references public.email_templates(id) on delete set null,
+  automation_id uuid references public.email_automations(id) on delete set null,
+  to_email text not null,
+  from_email text not null,
+  subject text not null,
+  body_html text not null,
+  status text not null default 'queued'
+    check (status in ('queued','sent','failed')),
+  provider_message_id text,
+  error_message text,
+  open_count integer not null default 0,
+  first_opened_at timestamptz,
+  last_opened_at timestamptz,
+  click_count integer not null default 0,
+  first_clicked_at timestamptz,
+  last_clicked_at timestamptz,
+  sent_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create unique index if not exists email_messages_tracking_id_key
+  on public.email_messages(tracking_id);
+
+create index if not exists email_messages_customer_id_idx
+  on public.email_messages(customer_id, created_at desc);
+
+create index if not exists email_messages_order_id_idx
+  on public.email_messages(order_id, created_at desc);
+
+-- CRM: raw open/click events (one row per pixel hit / link click) for
+-- analytics and debugging, distinct from the aggregate counts above.
+create table if not exists public.email_events (
+  id uuid primary key default gen_random_uuid(),
+  email_message_id uuid not null references public.email_messages(id) on delete cascade,
+  event_type text not null check (event_type in ('open','click')),
+  url text,
+  user_agent text,
+  ip text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists email_events_email_message_id_idx
+  on public.email_events(email_message_id, created_at desc);
+
+-- CRM: unified activity timeline per customer (orders, emails, notes, etc.)
+create table if not exists public.activity_events (
+  id uuid primary key default gen_random_uuid(),
+  customer_id uuid not null references public.customers(id) on delete cascade,
+  order_id uuid references public.orders(id) on delete set null,
+  email_message_id uuid references public.email_messages(id) on delete set null,
+  type text not null check (type in (
+    'order_created','order_status_changed','email_sent','email_opened',
+    'email_clicked','note_added'
+  )),
+  title text not null,
+  description text,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists activity_events_customer_id_idx
+  on public.activity_events(customer_id, created_at desc);
+
 -- Row Level Security: only authenticated users can access data
 alter table public.customers enable row level security;
 alter table public.orders enable row level security;
 alter table public.order_logos enable row level security;
 alter table public.order_garments enable row level security;
 alter table public.imported_orders enable row level security;
+alter table public.email_templates enable row level security;
+alter table public.email_automations enable row level security;
+alter table public.email_messages enable row level security;
+alter table public.email_events enable row level security;
+alter table public.activity_events enable row level security;
 
 do $$
 begin
@@ -453,6 +572,65 @@ begin
     where schemaname = 'public' and tablename = 'imported_orders' and policyname = 'auth users'
   ) then
     create policy "auth users" on public.imported_orders for all using (auth.role() = 'authenticated');
+  end if;
+end
+$$;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'email_templates' and policyname = 'auth users'
+  ) then
+    create policy "auth users" on public.email_templates for all using (auth.role() = 'authenticated');
+  end if;
+end
+$$;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'email_automations' and policyname = 'auth users'
+  ) then
+    create policy "auth users" on public.email_automations for all using (auth.role() = 'authenticated');
+  end if;
+end
+$$;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'email_messages' and policyname = 'auth users'
+  ) then
+    create policy "auth users" on public.email_messages for all using (auth.role() = 'authenticated');
+  end if;
+end
+$$;
+
+-- email_events/activity_events are written by the unauthenticated tracking
+-- pixel/redirect routes via the service-role admin client, which bypasses
+-- RLS entirely — these policies only govern reads/writes from the
+-- authenticated dashboard UI.
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'email_events' and policyname = 'auth users'
+  ) then
+    create policy "auth users" on public.email_events for all using (auth.role() = 'authenticated');
+  end if;
+end
+$$;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'activity_events' and policyname = 'auth users'
+  ) then
+    create policy "auth users" on public.activity_events for all using (auth.role() = 'authenticated');
   end if;
 end
 $$;

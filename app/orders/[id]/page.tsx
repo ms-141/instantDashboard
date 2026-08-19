@@ -4,6 +4,9 @@ import StatusBadge from '@/components/StatusBadge'
 import { notFound } from 'next/navigation'
 import { deleteOrder } from '@/app/actions/orders'
 import DeleteButton from '@/components/DeleteButton'
+import SendEmailForm from '@/components/SendEmailForm'
+import ActivityTimeline from '@/components/ActivityTimeline'
+import AddNoteForm from '@/components/AddNoteForm'
 import type { OrderLogo, OrderGarment } from '@/types'
 import { formatGarmentSizes } from '@/utils/garmentSizes'
 import ClickableImage from '@/components/ClickableImage'
@@ -26,11 +29,19 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   const { id } = await params
   const supabase = await createClient()
 
-  const { data: order } = await supabase
-    .from('orders')
-    .select('*, customer:customers(*), logos:order_logos(*), garments:order_garments(*)')
-    .eq('id', id)
-    .single()
+  const [{ data: order }, { data: templates }, { data: events }] = await Promise.all([
+    supabase
+      .from('orders')
+      .select('*, customer:customers(*), logos:order_logos(*), garments:order_garments(*)')
+      .eq('id', id)
+      .single(),
+    supabase.from('email_templates').select('*').order('name', { ascending: true }),
+    supabase
+      .from('activity_events')
+      .select('*, email_message:email_messages(status, open_count, click_count)')
+      .eq('order_id', id)
+      .order('created_at', { ascending: false }),
+  ])
 
   if (!order) notFound()
 
@@ -61,6 +72,12 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           </p>
         </div>
         <div className="flex gap-2">
+          <SendEmailForm
+            customerId={order.customer.id}
+            orderId={id}
+            customerEmail={order.customer.email}
+            templates={templates ?? []}
+          />
           <Link href={`/orders/${id}/edit`}
             className="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors">
             Edit
@@ -225,6 +242,14 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
             </table>
           </div>
         )}
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 mt-6">
+        <div className="px-6 py-4 border-b border-gray-100">
+          <h2 className="font-semibold text-gray-800">Activity</h2>
+        </div>
+        <AddNoteForm customerId={order.customer.id} orderId={id} />
+        <ActivityTimeline events={events ?? []} />
       </div>
     </div>
   )

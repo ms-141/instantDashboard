@@ -6,6 +6,7 @@ Web app for tracking embroidery customers, orders, logos, and garments.
 
 - Next.js (App Router)
 - Supabase (Auth + Postgres)
+- Nodemailer + Gmail SMTP (CRM email sends)
 - Tailwind CSS
 - Vercel
 
@@ -26,6 +27,10 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 INBOUND_ORDER_WEBHOOK_SECRET=your-very-long-random-shared-secret
 OLLAMA_BASE_URL=http://127.0.0.1:11434
 OLLAMA_MODEL=gemma4:e2b
+GMAIL_SMTP_USER=instant@telus.net
+GMAIL_SMTP_APP_PASSWORD=your-16-character-app-password
+EMAIL_FROM_ADDRESS=instant@telus.net
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
 3. Run schema in Supabase SQL editor:
@@ -39,6 +44,62 @@ OLLAMA_MODEL=gemma4:e2b
 ```bash
 npm run dev
 ```
+
+## CRM: email sending, open/click tracking, templates, automations
+
+The CRM layer lets you send tracked emails to customers (like HubSpot's
+email tool), with a per-customer/order activity timeline.
+
+### Setup: Gmail SMTP (sending as instant@telus.net)
+
+Since Telus routes `@telus.net` mail through Google Workspace, emails are
+sent by authenticating directly against Gmail's SMTP servers as the real
+`instant@telus.net` mailbox — not through a third-party email API. This
+means there's no domain-verification step (you can't verify `telus.net` in
+an ESP like Resend/SendGrid anyway, since Telus — not you — controls its
+DNS), but it does mean you're sending through the mailbox itself, so Gmail's
+sending limits apply (~2,000/day on Google Workspace, ~500/day on a plain
+consumer Gmail account — fine for CRM follow-ups, not for bulk marketing
+blasts).
+
+1. Sign in to the `instant@telus.net` Google account.
+2. Enable **2-Step Verification** (Google Account → Security) if not already on.
+3. Go to Google Account → Security → **App passwords**, and generate one for
+   this app (e.g. name it "Instant Dashboard CRM").
+4. Set:
+   - `GMAIL_SMTP_USER=instant@telus.net`
+   - `GMAIL_SMTP_APP_PASSWORD=` the generated app password (no spaces)
+   - `EMAIL_FROM_ADDRESS=instant@telus.net` (must match `GMAIL_SMTP_USER` —
+     Gmail's SMTP servers reject a `From` address that isn't the
+     authenticated mailbox or a configured "Send As" alias on it)
+5. Set `NEXT_PUBLIC_APP_URL` to your deployed app's public URL (e.g.
+   `https://your-app.vercel.app`). This is required because tracking pixel
+   and click-redirect links must be absolute — they're loaded from the
+   recipient's email client, not from your app.
+
+### How it works
+
+- **Sending**: "Send Email" on a customer or order page opens a compose
+  form (optionally pre-filled from a saved template). Sent emails are logged
+  to `email_messages`.
+- **Open tracking**: a 1x1 transparent tracking pixel is embedded in every
+  outbound email and served from `/api/track/open/[trackingId]`. Note that
+  Apple Mail Privacy Protection and some Gmail image proxies pre-fetch this
+  pixel automatically, so "opened" is a soft signal, not proof the recipient
+  actually read the email — this is the same limitation HubSpot and other
+  CRMs have.
+- **Click tracking**: links in outbound emails are rewritten to route
+  through `/api/track/click/[trackingId]` before redirecting to the original
+  URL.
+- **Templates**: manage reusable templates under **Templates** in the nav,
+  with merge fields like `{{customer_name}}`, `{{order_number}}`, and
+  `{{due_date}}`.
+- **Automations**: under **Automations**, configure a template to be sent
+  automatically whenever an order's status changes to a given value (e.g.
+  auto-email customers when an order becomes `completed`).
+- **Activity timeline**: each customer/order page shows a unified feed of
+  orders created, status changes, emails sent/opened/clicked, and manually
+  added notes.
 
 ## Inbound email -> review queue -> order automation
 
@@ -186,3 +247,7 @@ In Vercel project settings, set environment variables for Production (and Previe
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `INBOUND_ORDER_WEBHOOK_SECRET`
+- `GMAIL_SMTP_USER`
+- `GMAIL_SMTP_APP_PASSWORD`
+- `EMAIL_FROM_ADDRESS`
+- `NEXT_PUBLIC_APP_URL` (your production URL, e.g. `https://your-app.vercel.app`)
