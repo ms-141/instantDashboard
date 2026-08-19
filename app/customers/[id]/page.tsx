@@ -4,6 +4,9 @@ import StatusBadge from '@/components/StatusBadge'
 import { notFound } from 'next/navigation'
 import { deleteCustomer } from '@/app/actions/customers'
 import DeleteButton from '@/components/DeleteButton'
+import SendEmailForm from '@/components/SendEmailForm'
+import ActivityTimeline from '@/components/ActivityTimeline'
+import AddNoteForm from '@/components/AddNoteForm'
 import type { Order } from '@/types'
 
 function formatDate(d: string) {
@@ -16,9 +19,15 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
   const { id } = await params
   const supabase = await createClient()
 
-  const [{ data: customer }, { data: orders }] = await Promise.all([
+  const [{ data: customer }, { data: orders }, { data: templates }, { data: events }] = await Promise.all([
     supabase.from('customers').select('*').eq('id', id).single(),
     supabase.from('orders').select('*').eq('customer_id', id).order('due_date', { ascending: true }),
+    supabase.from('email_templates').select('*').order('name', { ascending: true }),
+    supabase
+      .from('activity_events')
+      .select('*, email_message:email_messages(status, open_count, click_count)')
+      .eq('customer_id', id)
+      .order('created_at', { ascending: false }),
   ])
 
   if (!customer) notFound()
@@ -37,6 +46,11 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
           {customer.contact_name && <p className="text-sm text-gray-500 mt-1">Contact: {customer.contact_name}</p>}
         </div>
         <div className="flex gap-2">
+          <SendEmailForm
+            customerId={id}
+            customerEmail={customer.email}
+            templates={templates ?? []}
+          />
           <Link href={`/customers/${id}/edit`}
             className="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors">
             Edit
@@ -104,6 +118,14 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
             </table>
           </div>
         )}
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 mt-6">
+        <div className="px-6 py-4 border-b border-gray-100">
+          <h2 className="font-semibold text-gray-800">Activity</h2>
+        </div>
+        <AddNoteForm customerId={id} />
+        <ActivityTimeline events={events ?? []} />
       </div>
     </div>
   )

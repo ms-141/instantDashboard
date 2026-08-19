@@ -3,6 +3,8 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import { runStatusAutomations } from '@/app/actions/automations'
+import type { OrderStatus } from '@/types'
 
 function asText(value: FormDataEntryValue | null): string | null {
   if (typeof value !== 'string') return null
@@ -114,6 +116,13 @@ export async function createOrder(formData: FormData) {
     )
   }
 
+  await supabase.from('activity_events').insert({
+    customer_id: order.customer_id,
+    order_id: order.id,
+    type: 'order_created',
+    title: `Order ${order.order_number ? `#${order.order_number}` : ''} created`.trim(),
+  })
+
   revalidatePath('/')
   revalidatePath('/orders')
   redirect(`/orders/${order.id}`)
@@ -121,6 +130,12 @@ export async function createOrder(formData: FormData) {
 
 export async function updateOrder(orderId: string, formData: FormData) {
   const supabase = await createClient()
+
+  const { data: existingOrder } = await supabase
+    .from('orders')
+    .select('status, customer_id')
+    .eq('id', orderId)
+    .single()
   const orderNumber = (formData.get('order_number') as string)?.trim() || null
 
   const updatePayload: {
@@ -172,6 +187,17 @@ export async function updateOrder(orderId: string, formData: FormData) {
     )
   }
 
+  const newStatus = updatePayload.status as OrderStatus
+  if (existingOrder && existingOrder.status !== newStatus) {
+    await supabase.from('activity_events').insert({
+      customer_id: updatePayload.customer_id,
+      order_id: orderId,
+      type: 'order_status_changed',
+      title: `Order status changed to ${newStatus.replace('_', ' ')}`,
+    })
+    await runStatusAutomations(orderId, newStatus)
+  }
+
   revalidatePath('/')
   revalidatePath('/orders')
   revalidatePath(`/orders/${orderId}`)
@@ -189,12 +215,28 @@ export async function deleteOrder(orderId: string) {
 export async function markOrderCompleted(orderId: string) {
   const supabase = await createClient()
 
+  const { data: existingOrder } = await supabase
+    .from('orders')
+    .select('status, customer_id')
+    .eq('id', orderId)
+    .single()
+
   const { error } = await supabase
     .from('orders')
     .update({ status: 'completed' })
     .eq('id', orderId)
 
   if (error) throw new Error(error.message)
+
+  if (existingOrder && existingOrder.status !== 'completed') {
+    await supabase.from('activity_events').insert({
+      customer_id: existingOrder.customer_id,
+      order_id: orderId,
+      type: 'order_status_changed',
+      title: 'Order status changed to completed',
+    })
+    await runStatusAutomations(orderId, 'completed')
+  }
 
   revalidatePath('/')
   revalidatePath('/orders')
