@@ -40,6 +40,7 @@ export async function sendEmail(params: {
 
   if (customerError || !customer) throw new Error('Customer not found')
   if (!customer.email) throw new Error(`${customer.name} has no email address on file`)
+  if (customer.email_opted_out) throw new Error(`${customer.name} has opted out of email outreach`)
 
   let order: Order | null = null
   if (params.orderId) {

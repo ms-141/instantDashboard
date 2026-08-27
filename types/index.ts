@@ -8,6 +8,8 @@ export type ActivityEventType =
   | 'email_sent'
   | 'email_opened'
   | 'email_clicked'
+  | 'email_received'
+  | 'email_opted_out'
   | 'note_added'
 
 export interface Customer {
@@ -17,6 +19,8 @@ export interface Customer {
   email: string | null
   phone: string | null
   notes: string | null
+  email_opted_out: boolean
+  email_opted_out_at: string | null
   created_at: string
 }
 
@@ -143,6 +147,7 @@ export interface EmailMessage {
   body_html: string
   status: EmailStatus
   provider_message_id: string | null
+  thread_id: string | null
   error_message: string | null
   open_count: number
   first_opened_at: string | null
@@ -163,6 +168,23 @@ export interface EmailEvent {
   url: string | null
   user_agent: string | null
   ip: string | null
+  created_at: string
+}
+
+export interface EmailReply {
+  id: string
+  customer_id: string | null
+  email_message_id: string | null
+  gmail_message_id: string
+  gmail_thread_id: string | null
+  from_email: string
+  to_email: string | null
+  subject: string
+  body_text: string
+  body_html: string | null
+  received_at: string
+  is_read: boolean
+  is_opt_out: boolean
   created_at: string
 }
 

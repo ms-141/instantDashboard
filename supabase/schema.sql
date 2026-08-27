@@ -385,6 +385,9 @@ create table if not exists public.email_messages (
   created_at timestamptz not null default now()
 );
 
+alter table public.email_messages
+  add column if not exists thread_id text;
+
 create unique index if not exists email_messages_tracking_id_key
   on public.email_messages(tracking_id);
 
@@ -393,6 +396,35 @@ create index if not exists email_messages_customer_id_idx
 
 create index if not exists email_messages_order_id_idx
   on public.email_messages(order_id, created_at desc);
+
+-- CRM: inbound replies synced from the Gmail mailbox.
+create table if not exists public.email_replies (
+  id uuid primary key default gen_random_uuid(),
+  customer_id uuid references public.customers(id) on delete set null,
+  email_message_id uuid references public.email_messages(id) on delete set null,
+  gmail_message_id text not null,
+  gmail_thread_id text,
+  from_email text not null,
+  to_email text,
+  subject text not null default '',
+  body_text text not null default '',
+  body_html text,
+  received_at timestamptz not null,
+  is_read boolean not null default false,
+  is_opt_out boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+create unique index if not exists email_replies_gmail_message_id_key
+  on public.email_replies(gmail_message_id);
+
+create index if not exists email_replies_customer_id_idx
+  on public.email_replies(customer_id, received_at desc);
+
+alter table public.customers
+  add column if not exists email_opted_out boolean not null default false;
+alter table public.customers
+  add column if not exists email_opted_out_at timestamptz;
 
 -- CRM: raw open/click events (one row per pixel hit / link click) for
 -- analytics and debugging, distinct from the aggregate counts above.
@@ -417,8 +449,9 @@ create table if not exists public.activity_events (
   email_message_id uuid references public.email_messages(id) on delete set null,
   type text not null check (type in (
     'order_created','order_status_changed','email_sent','email_opened',
-    'email_clicked','note_added'
+    'email_clicked','email_received','email_opted_out','note_added'
   )),
+  email_reply_id uuid references public.email_replies(id) on delete set null,
   title text not null,
   description text,
   metadata jsonb not null default '{}'::jsonb,
@@ -427,6 +460,19 @@ create table if not exists public.activity_events (
 
 create index if not exists activity_events_customer_id_idx
   on public.activity_events(customer_id, created_at desc);
+
+alter table public.activity_events
+  add column if not exists email_reply_id uuid references public.email_replies(id) on delete set null;
+
+do $$
+begin
+  alter table public.activity_events drop constraint if exists activity_events_type_check;
+  alter table public.activity_events add constraint activity_events_type_check check (type in (
+    'order_created','order_status_changed','email_sent','email_opened',
+    'email_clicked','email_received','email_opted_out','note_added'
+  ));
+end
+$$;
 
 -- Row Level Security: only authenticated users can access data
 alter table public.customers enable row level security;
@@ -438,6 +484,7 @@ alter table public.email_templates enable row level security;
 alter table public.email_automations enable row level security;
 alter table public.email_messages enable row level security;
 alter table public.email_events enable row level security;
+alter table public.email_replies enable row level security;
 alter table public.activity_events enable row level security;
 
 do $$
@@ -447,6 +494,17 @@ begin
     where schemaname = 'public' and tablename = 'customers' and policyname = 'auth users'
   ) then
     create policy "auth users" on public.customers for all using (auth.role() = 'authenticated');
+  end if;
+end
+$$;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'email_replies' and policyname = 'auth users'
+  ) then
+    create policy "auth users" on public.email_replies for all using (auth.role() = 'authenticated');
   end if;
 end
 $$;

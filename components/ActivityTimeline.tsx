@@ -16,6 +16,8 @@ const ICONS: Record<ActivityEvent['type'], string> = {
   email_sent: '✉️',
   email_opened: '👀',
   email_clicked: '🔗',
+  email_received: '↩️',
+  email_opted_out: '⛔',
   note_added: '📝',
 }
 

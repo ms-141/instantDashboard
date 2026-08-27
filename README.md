@@ -250,4 +250,9 @@ In Vercel project settings, set environment variables for Production (and Previe
 - `GMAIL_SMTP_USER`
 - `GMAIL_SMTP_APP_PASSWORD`
 - `EMAIL_FROM_ADDRESS`
+- `GMAIL_SYNC_USER`
+- `GMAIL_CLIENT_ID`
+- `GMAIL_CLIENT_SECRET`
+- `GMAIL_REFRESH_TOKEN`
+- `CRON_SECRET`
 - `NEXT_PUBLIC_APP_URL` (your production URL, e.g. `https://your-app.vercel.app`)
